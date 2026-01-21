@@ -17,5 +17,5 @@ jobs:
 
     - uses: 'google-github-actions/auth@v3'
       with:
-        project_id: 'upbeat-glow-485006-c3'
+        project_id: ${{ vars.GCP_PROJECT_ID }}
         workload_identity_provider: 'projects/38689850492/locations/global/workloadIdentityPools/terraform-oidc/providers/terraform-oidc'
