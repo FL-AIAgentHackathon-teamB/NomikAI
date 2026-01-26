@@ -1,0 +1,15 @@
+.git
+.gitignore
+node_modules
+npm-debug.log
+.env
+.env.local
+.DS_Store
+.next
+out
+README.md
+.vscode
+.idea
+backend
+terraform
+docs
