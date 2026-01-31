@@ -18,4 +18,4 @@ jobs:
     - uses: 'google-github-actions/auth@v3'
       with:
         project_id: ${{ vars.GCP_PROJECT_ID }}
-        workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER_TERRAFORM}}
+        workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER_TERRAFORM }}
