@@ -1,19 +1,13 @@
-# Terraform Backend Configuration
+# Terraform Configuration
 terraform {
   required_version = ">= 1.0"
-  
+
   required_providers {
     google = {
       source  = "hashicorp/google"
       version = "~> 5.0"
     }
   }
-
-  # State管理（後で設定）
-  # backend "gcs" {
-  #   bucket = "nomikai-terraform-state"
-  #   prefix = "terraform/state"
-  # }
 }
 
 # Google Cloud Provider
