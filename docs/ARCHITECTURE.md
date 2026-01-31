@@ -67,8 +67,8 @@
 | Cloud Run (Frontend) | Next.js ホスティング | 公開アクセス可 |
 | Cloud Run (Backend) | API サーバー | IAM認証必須 |
 | Artifact Registry | Docker イメージ保存 | |
-| Firestore | セッション・食事履歴 | TTL: 3日 |
-| Cloud Storage | 食事画像保存 | TTL: 3日、ライフサイクルルール |
+| Firestore | セッション・食事履歴 | TTL: 1日 |
+| Cloud Storage | 食事画像保存 | TTL: 1日、ライフサイクルルール |
 | Secret Manager | APIキー管理 | 手動で値を設定 |
 | GCS (terraform) | Terraform state | |
 
@@ -122,7 +122,7 @@ Backend (Cloud Run)
 ### データストア
 - **Primary DB**: Firestore (NoSQL)
 - **File Storage**: Cloud Storage (画像保存)
-- **データ保持期間**: 3日間 (TTL)
+- **データ保持期間**: 1日間 (TTL)
 
 ### Infrastructure
 - **Container Runtime**: Cloud Run (Auto-scaling)
@@ -305,7 +305,7 @@ Response:
 - **通信**: TLS 1.3 (Cloud Run標準)
 - **Secrets**: Secret Manager で管理（手動で値を設定）
 - **画像**: GCS + Signed URLs
-- **データ保持**: 3日間で自動削除（TTL）
+- **データ保持**: 1日間で自動削除（TTL）
 
 ## デプロイメント
 
