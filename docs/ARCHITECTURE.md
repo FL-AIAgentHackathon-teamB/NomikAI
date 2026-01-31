@@ -2,63 +2,104 @@
 
 ## 概要
 
-食事管理とトレーニング支援を行うAIエージェント「Nomini」のシステムアーキテクチャ。
-フロントエンド（Next.js）とバックエンド（Scala/Play or Node.js）を分離し、Google Cloud上で動作する。
+食事管理を行うAIエージェント「Nomini」のシステムアーキテクチャ。
+フロントエンド（Next.js）とバックエンド（Node.js/Express）を分離し、Google Cloud上で動作する。
 
 ## システム構成図
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                        Client Layer                          │
+│                         User                                 │
+└───────────────────────────┬─────────────────────────────────┘
+                            │ HTTPS
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Frontend (Cloud Run)                      │
 │  ┌──────────────────────────────────────────────────────┐   │
-│  │          Next.js Frontend (React)                     │   │
+│  │              Next.js 15 (App Router)                  │   │
 │  │  - UI/UX (モバイルファースト)                           │   │
 │  │  - 画像アップロード                                      │   │
-│  │  - 結果表示                                             │   │
+│  │  - セッション・履歴表示                                   │   │
 │  └──────────────────────────────────────────────────────┘   │
 └───────────────────────────┬─────────────────────────────────┘
-                            │ HTTPS (REST API)
+                            │ HTTPS + IAM認証 (IDトークン)
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                      API Gateway Layer                       │
+│                    Backend (Cloud Run)                       │
 │  ┌──────────────────────────────────────────────────────┐   │
-│  │         Cloud Load Balancer + Cloud Armor           │   │
-│  │  - Rate Limiting                                     │   │
-│  │  - DDoS Protection                                   │   │
-│  └──────────────────────────────────────────────────────┘   │
-└───────────────────────────┬─────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    Application Layer                         │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │        Backend API Server (Cloud Run)               │   │
-│  │                                                       │   │
-│  │  Option A: Scala + Play Framework                   │   │
-│  │  Option B: Node.js + Express                        │   │
+│  │            Node.js + Express + Genkit                │   │
 │  │                                                       │   │
 │  │  Endpoints:                                          │   │
-│  │  - POST /api/v1/meals/analyze                       │   │
-│  │  - POST /api/v1/calories/advice                     │   │
-│  │  - GET  /api/v1/users/{id}/history                  │   │
-│  │  - POST /api/v1/users/{id}/preferences              │   │
-│  │  - GET  /api/v1/training/suggestions                │   │
+│  │  - POST /api/v1/sessions                            │   │
+│  │  - GET  /api/v1/sessions/{id}                       │   │
+│  │  - POST /api/v1/sessions/{id}/meals/analyze         │   │
+│  │  - GET  /api/v1/sessions/{id}/meals                 │   │
 │  └──────────────────────────────────────────────────────┘   │
 └───────────────────────────┬─────────────────────────────────┘
                             │
-           ┌────────────────┼────────────────┐
-           │                │                │
-           ▼                ▼                ▼
-┌──────────────────┐ ┌──────────────┐ ┌──────────────────┐
-│   Vertex AI      │ │  Cloud SQL   │ │ Secret Manager   │
-│   (Gemini API)   │ │  PostgreSQL  │ │                  │
-│                  │ │              │ │  - API Keys      │
-│  - 食事画像解析   │ │  - Users     │ │  - DB Password   │
-│  - カロリー推定   │ │  - Meals     │ └──────────────────┘
-│  - アドバイス生成 │ │  - History   │
-└──────────────────┘ │  - Settings  │
-                     └──────────────┘
+     ┌──────────────────────┼──────────────────────┐
+     │                      │                      │
+     ▼                      ▼                      ▼
+┌──────────────┐    ┌──────────────┐    ┌──────────────────┐
+│  Gemini API  │    │  Firestore   │    │       GCS        │
+│              │    │              │    │     (images)     │
+│ - 食事画像解析│    │ - sessions   │    │                  │
+│ - カロリー推定│    │ - meals      │    │ - 食事画像        │
+│ - アドバイス  │    │ (TTL: 3日)   │    │ (TTL: 3日)       │
+└──────────────┘    └──────────────┘    └──────────────────┘
+     │
+     │ APIキー参照
+     ▼
+┌──────────────┐
+│Secret Manager│
+│              │
+│- GEMINI_API  │
+│  _KEY        │
+└──────────────┘
 ```
+
+## インフラ構成
+
+### GCPリソース一覧
+
+| リソース | 用途 | 備考 |
+|----------|------|------|
+| Cloud Run (Frontend) | Next.js ホスティング | 公開アクセス可 |
+| Cloud Run (Backend) | API サーバー | IAM認証必須 |
+| Artifact Registry | Docker イメージ保存 | |
+| Firestore | セッション・食事履歴 | TTL: 3日 |
+| Cloud Storage | 食事画像保存 | TTL: 3日、ライフサイクルルール |
+| Secret Manager | APIキー管理 | 手動で値を設定 |
+| GCS (terraform) | Terraform state | |
+
+### 認証フロー
+
+```
+Frontend (Cloud Run)
+    │
+    │ 1. Google認証ライブラリでIDトークン取得
+    │
+    ▼
+Authorization: Bearer <ID_TOKEN>
+    │
+    │ 2. Backend呼び出し
+    │
+    ▼
+Backend (Cloud Run)
+    │
+    │ 3. IAMがトークンを検証
+    │    (Frontend SAのみ許可)
+    │
+    ▼
+処理実行
+```
+
+### VPCを使わない理由
+
+- Cloud Run同士の通信はIAM認証で保護可能
+- Firestoreは公開APIでIAMアクセス制御
+- VPC Connector不要でコスト削減 (~$7/月)
+- コールドスタートが速い
 
 ## 技術スタック
 
@@ -66,243 +107,287 @@
 - **Framework**: Next.js 15 (App Router)
 - **UI Library**: React 19
 - **Styling**: Tailwind CSS + Radix UI
-- **Deployment**: Firebase App Hosting / Cloud Run
+- **Deployment**: Cloud Run
 
 ### バックエンド
-- **Option A (推奨 - お主が慣れている)**: 
-  - Language: Scala 3
-  - Framework: Play Framework
-  - Build Tool: sbt
-  
-- **Option B (軽量)**: 
-  - Runtime: Node.js 20+
-  - Framework: Express / Fastify
-  - Language: TypeScript
+- **Runtime**: Node.js 20+
+- **Framework**: Express
+- **Language**: TypeScript
+- **AI SDK**: Genkit + Google GenAI
 
 ### AI/ML
-- **Platform**: Google Cloud Vertex AI
-- **Model**: Gemini 2.5 Flash / Gemini 2.5 Pro
-- **SDK**: Vertex AI SDK for Scala/Node.js
+- **Model**: Gemini 2.5 Flash
+- **SDK**: @genkit-ai/google-genai
 
-### データベース
-- **Primary DB**: Cloud SQL (PostgreSQL 15)
-- **Cache**: Cloud Memorystore (Redis) - optional
+### データストア
+- **Primary DB**: Firestore (NoSQL)
 - **File Storage**: Cloud Storage (画像保存)
+- **データ保持期間**: 3日間 (TTL)
 
 ### Infrastructure
 - **Container Runtime**: Cloud Run (Auto-scaling)
+- **Container Registry**: Artifact Registry
 - **IaC**: Terraform
-- **CI/CD**: Cloud Build + GitHub Actions
-- **Monitoring**: Cloud Logging + Cloud Monitoring
+- **CI/CD**: GitHub Actions
 - **Secret Management**: Secret Manager
 
-## データモデル
+## データモデル (Firestore)
 
-### Users テーブル
-```sql
-CREATE TABLE users (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  email VARCHAR(255) UNIQUE NOT NULL,
-  name VARCHAR(100),
-  target_weight DECIMAL(5,2),
-  target_calories INTEGER,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+### sessions コレクション
+```typescript
+// sessions/{sessionId}
+interface Session {
+  id: string;                // ドキュメントID
+  name?: string;             // "新年会" など（任意、最大100文字）
+  createdAt: Timestamp;
+  expireAt: Timestamp;       // TTL用 (createdAt + 24時間で固定)
+}
 ```
 
-### Meals テーブル
-```sql
-CREATE TABLE meals (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES users(id),
-  image_url VARCHAR(500),
-  food_name VARCHAR(200),
-  calories INTEGER,
-  remaining_calories INTEGER,
-  verdict VARCHAR(20), -- 'OK' or 'CAUTION'
-  suggestion TEXT,
-  eaten_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+### meals サブコレクション
+```typescript
+// sessions/{sessionId}/meals/{mealId}
+interface Meal {
+  id: string;              // ドキュメントID
+  imageUrl: string;        // GCSのURL
+  analyzedAt: Timestamp;
+  calories: number;
+  foods: Food[];
+  advice: string;
+}
+
+interface Food {
+  name: string;            // "唐揚げ"
+  calories: number;        // 300
+  quantity?: string;       // "3個"
+}
 ```
 
-### User_Settings テーブル
-```sql
-CREATE TABLE user_settings (
-  user_id UUID PRIMARY KEY REFERENCES users(id),
-  calendar_integration BOOLEAN DEFAULT FALSE,
-  google_calendar_token TEXT,
-  notification_enabled BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+### TTL設定
+- **有効期限**: 作成から24時間（固定）
+- Firestoreの TTL機能で自動削除
+- GCSのライフサイクルルールも24時間で同期削除
+- ⚠️ タイミング差で一時的に404が発生する可能性あり（許容）
+
+## セッション管理（ユーザー登録なし）
+
+### アクセス方法
+ユーザー登録なしで、以下2つの方法でセッションにアクセス：
+
+1. **URL直接アクセス**: `nomikai.app/s/{sessionId}`
+2. **ローカルストレージ**: 同じブラウザなら履歴から選択
+
+### URL構成
+```
+/                    → トップページ（履歴一覧 + 新規作成）
+/s/{sessionId}       → セッション詳細（食事一覧）
 ```
 
-### Training_History テーブル
-```sql
-CREATE TABLE training_history (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES users(id),
-  gym_area VARCHAR(100),
-  suggested_exercises JSONB,
-  completed BOOLEAN DEFAULT FALSE,
-  completed_at TIMESTAMP,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+### ローカルストレージ (Frontend)
+```typescript
+// 保存形式
+interface LocalSession {
+  id: string;
+  name: string;
+  createdAt: string;  // ISO 8601
+}
+
+// 最新10件を保存
+localStorage.setItem('sessions', JSON.stringify(sessions));
+```
+
+### トップページUI
+```
+┌─────────────────────────────────────────────────────┐
+│  🍺 NomikAI                                         │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│   📸 新しいセッションを始める                         │
+│   [ セッション開始 ]                                  │
+│                                                     │
+│   ─────────────────────────────────                 │
+│                                                     │
+│   📋 最近のセッション                                │
+│   ┌─────────────────────────────────┐               │
+│   │ 🍺 新年会         1/31 19:00    │               │
+│   │    1,650 kcal    あと23時間     │               │
+│   └─────────────────────────────────┘               │
+│                                                     │
+│   💡 URLを共有すれば他の端末でも見れます              │
+│                                                     │
+└─────────────────────────────────────────────────────┘
 ```
 
 ## API設計
 
-### 1. 食事画像解析 API
+### 1. セッション作成
 ```
-POST /api/v1/meals/analyze
+POST /api/v1/sessions
+
+Request:
+{
+  "name": "新年会"  // 任意
+}
+
+Response:
+{
+  "sessionId": "abc123",
+  "name": "新年会",
+  "createdAt": "2026-01-31T19:00:00Z",
+  "expireAt": "2026-02-03T19:00:00Z"
+}
+```
+
+### 2. 食事画像解析
+```
+POST /api/v1/sessions/{sessionId}/meals/analyze
 Content-Type: multipart/form-data
 
 Request:
-{
-  "user_id": "uuid",
-  "image": "base64_encoded_image",
-  "remaining_calories": 1500
-}
+- image: (binary)
 
 Response:
 {
-  "meal_id": "uuid",
-  "food_name": "ハンバーグ定食",
-  "calorie_estimate": 850,
-  "verdict": "CAUTION",
-  "suggestion": "夜の飲み会を考慮すると、このメニューは少し重いです。ご飯を半分にすることをお勧めします。",
-  "remaining_calories": 650
+  "mealId": "xyz789",
+  "imageUrl": "https://storage.googleapis.com/...",
+  "calories": 850,
+  "foods": [
+    { "name": "唐揚げ", "calories": 400, "quantity": "5個" },
+    { "name": "ビール", "calories": 150, "quantity": "1杯" },
+    { "name": "枝豆", "calories": 100, "quantity": "1皿" }
+  ],
+  "advice": "揚げ物が多めです。次は野菜を取り入れましょう！",
+  "analyzedAt": "2026-01-31T19:30:00Z"
 }
 ```
 
-### 2. カロリーアドバイス取得
+### 3. セッション詳細取得（食事履歴含む）
 ```
-POST /api/v1/calories/advice
-
-Request:
-{
-  "user_id": "uuid",
-  "food_name": "ラーメン",
-  "food_calories": 700,
-  "remaining_calories": 1200
-}
+GET /api/v1/sessions/{sessionId}
 
 Response:
 {
-  "advice": "まだ1200kcal残っているので、ラーメンを食べても大丈夫です！",
-  "updated_remaining_calories": 500
-}
-```
-
-### 3. 食事履歴取得
-```
-GET /api/v1/users/{user_id}/meals?from=2026-01-01&to=2026-01-31
-
-Response:
-{
+  "sessionId": "abc123",
+  "name": "新年会",
+  "createdAt": "2026-01-31T19:00:00Z",
+  "totalCalories": 1650,
   "meals": [
     {
-      "id": "uuid",
-      "date": "2026-01-19T12:30:00Z",
-      "food_name": "サラダボウル",
-      "calories": 450,
-      "verdict": "OK"
+      "mealId": "xyz789",
+      "imageUrl": "https://...",
+      "calories": 850,
+      "foods": [...],
+      "analyzedAt": "2026-01-31T19:30:00Z"
     },
-    ...
-  ],
-  "total_calories": 1850,
-  "average_daily_calories": 1850
+    {
+      "mealId": "xyz790",
+      "imageUrl": "https://...",
+      "calories": 800,
+      "foods": [...],
+      "analyzedAt": "2026-01-31T20:15:00Z"
+    }
+  ]
 }
 ```
 
 ## セキュリティ設計
 
-### 認証・認可
-- **認証**: Firebase Authentication
-- **トークン**: JWT (Firebase ID Token)
-- **認可**: Role-Based Access Control (RBAC)
+### Cloud Run間の認証
+- **方式**: IAM認証 (IDトークン)
+- **FrontendのSA**: Backend呼び出し権限 (`roles/run.invoker`)
+- **BackendのSA**: Firestore/GCSアクセス権限
 
 ### API保護
-- **Rate Limiting**: Cloud Armor (100 req/min per IP)
-- **CORS**: 許可されたオリジンのみ
-- **Input Validation**: Zod/Play Validation
+- **Backend**: Cloud Run IAM認証必須（Frontend SAのみ許可）
+- **Frontend**: 公開アクセス可 (--allow-unauthenticated)
 
 ### データ保護
-- **通信**: TLS 1.3
-- **DB**: Cloud SQL Proxy経由で接続
-- **Secrets**: Secret Manager で管理
-- **画像**: Cloud Storage (Signed URLs, 1時間有効)
+- **通信**: TLS 1.3 (Cloud Run標準)
+- **Secrets**: Secret Manager で管理（手動で値を設定）
+- **画像**: GCS + Signed URLs
+- **データ保持**: 3日間で自動削除（TTL）
 
-## デプロイメント戦略
-
-### 環境
-1. **Development**: ローカル開発環境
-2. **Staging**: Cloud Run (staging)
-3. **Production**: Cloud Run (production)
+## デプロイメント
 
 ### CI/CD パイプライン
 ```
-GitHub Push → Cloud Build → Container Build → Deploy to Cloud Run
-                           ↓
-                     Run Tests (Unit + Integration)
+GitHub PR
+    │
+    ▼
+┌─────────────────────────────────┐
+│  Terraform Plan (自動)          │
+│  - PRにコメントで結果表示        │
+└─────────────────────────────────┘
+    │
+    ▼ マージ
+┌─────────────────────────────────┐
+│  Terraform Plan (自動)          │
+│  - mainでも再確認               │
+└─────────────────────────────────┘
+    │
+    ▼ 手動実行
+┌─────────────────────────────────┐
+│  Terraform Apply (手動)         │
+│  - "apply"入力で実行            │
+└─────────────────────────────────┘
 ```
 
-### Rollback 戦略
-- Cloud Run のリビジョン管理
-- トラフィックの段階的移行 (Canary Deployment)
+### Terraform管理リソース
+```
+terraform/
+├── main.tf              # provider設定
+├── variables.tf         # 変数定義
+├── apis.tf              # 必要なAPIを有効化
+├── artifact-registry.tf # Dockerイメージ保存
+├── secret-manager.tf    # シークレットの箱
+├── iam.tf               # サービスアカウント
+├── firestore.tf         # データベース
+├── gcs.tf               # 画像保存 + Terraform state
+├── cloud-run.tf         # Frontend & Backend
+└── outputs.tf           # 出力値
+```
 
 ## コスト見積もり (月額)
 
-### MVP フェーズ
-- Cloud Run: ~$10 (小規模トラフィック)
-- Cloud SQL: ~$25 (db-f1-micro)
-- Vertex AI: ~$50-100 (画像解析量による)
-- その他: ~$15
-- **合計**: ~$100-150/月
+### ハッカソン/MVP フェーズ
+| サービス | 見積もり | 備考 |
+|----------|----------|------|
+| Cloud Run | ~$0 | 無料枠内 |
+| Firestore | ~$0 | 無料枠内 |
+| Cloud Storage | ~$1 | 24時間TTLで容量抑制 |
+| Artifact Registry | ~$1 | イメージ保存 |
+| Secret Manager | ~$0 | 無料枠内 |
+| Gemini API | ~$5-20 | 使用量による |
+| **合計** | **~$10-25/月** | |
 
-### 本番フェーズ (ユーザー1000人想定)
-- Cloud Run: ~$50-100
-- Cloud SQL: ~$100-200
-- Vertex AI: ~$300-500
-- Cloud Storage: ~$20
-- その他: ~$30
-- **合計**: ~$500-850/月
+### 本番フェーズ (ユーザー増加時)
+- Cloud Run: ~$20-50
+- Firestore: ~$10-30
+- Gemini API: ~$50-100
+- **合計**: ~$80-180/月
 
 ## 今後の拡張性
 
-### Phase 3+: 機能追加
-- Google Calendar API 連携
-- Google Maps API 連携（店舗推定）
-- リアルタイム通知 (Cloud Pub/Sub)
-- マルチデバイス対応
-- 友達との共有機能
+### 短期 (ハッカソン後)
+- ユーザー認証 (Firebase Auth)
+- カロリー目標設定
+- 1日の食事サマリー
 
-### スケーリング戦略
-- Cloud Run の自動スケーリング
-- Read Replica の追加
-- Redis キャッシュの導入
-- CDN の活用
+### 中期
+- Google Calendar連携
+- プッシュ通知
+- 食事の手動編集
 
-## 開発ロードマップ
+### スケーリング
+- Cloud Runの自動スケーリングで対応
+- 必要に応じてCloud SQL (PostgreSQL) への移行検討
 
-### Week 1: インフラ構築
-- [x] アーキテクチャ設計
-- [ ] Terraform設定
-- [ ] バックエンドAPI初期実装
+## 設計判断の記録
 
-### Week 2: API実装
-- [ ] 食事解析API
-- [ ] データベーススキーマ
-- [ ] 認証機能
-
-### Week 3: フロントエンド統合
-- [ ] API統合
-- [ ] UI/UX改善
-- [ ] テスト
-
-### Week 4: 最終調整
-- [ ] パフォーマンス最適化
-- [ ] デモ動画作成
-- [ ] ドキュメント整備
+| 判断 | 選択 | 理由 |
+|------|------|------|
+| DB | Firestore | VPC不要、無料枠大、スキーマレス |
+| 認証 | IAM認証 (Cloud Run間) | シンプル、追加コストなし |
+| VPC | 使わない | コスト削減、コールドスタート改善 |
+| TTL | 作成から24時間（固定） | シンプル、Firestore/GCS同期しやすい |
+| ユーザー管理 | なし (URL + localStorage) | 登録不要でハードル低い |
