@@ -25,6 +25,9 @@ resource "google_project_iam_member" "backend_storage" {
   project = var.project_id
   role    = "roles/storage.objectAdmin"
   member  = "serviceAccount:${google_service_account.backend.email}"
+  
+  # 並行更新を避けるため順次実行
+  depends_on = [google_project_iam_member.backend_firestore]
 }
 
 # Secret Manager access (for API keys)
@@ -39,6 +42,9 @@ resource "google_project_iam_member" "backend_aiplatform" {
   project = var.project_id
   role    = "roles/aiplatform.user"
   member  = "serviceAccount:${google_service_account.backend.email}"
+  
+  # 並行更新を避けるため順次実行
+  depends_on = [google_project_iam_member.backend_storage]
 }
 
 # -----------------------------------------------------------------------------
