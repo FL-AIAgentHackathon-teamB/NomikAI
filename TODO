@@ -2,6 +2,23 @@ must:
 - cloud runを作成したら、画像保存用のGCSバケットにCORS設定を追加する
 - デプロイ用のCIを作る(frontend, backendのコードがmainにプッシュされたらdocker build -> artifact registry -> cloud runへのデプロイを行う)
 - リポジトリが公開できる状態になったら、applyのciをplanに含める
+- アプリケーションコードでexpireAtフィールドを設定:
+  ```typescript
+  // セッション作成時
+  const expireAt = Timestamp.fromMillis(Date.now() + 24 * 60 * 60 * 1000);
+  await sessionRef.set({
+    name: '新年会',
+    createdAt: Timestamp.now(),
+    expireAt: expireAt  // 24時間後に自動削除
+  });
+  
+  // 食事追加時（親と同じexpireAtを設定）
+  await mealRef.set({
+    imageUrl: '...',
+    calories: 850,
+    expireAt: expireAt  // 親と同じ値
+  });
+  ```
 want:
 - 投稿が増えるたびにTTLを更新し、最終更新か起算したTTLで履歴と画像を削除(Cloud Functions連動削除)
   - 最初は固定TTL
