@@ -26,5 +26,8 @@
     "@types/node": "^20",
     "tsx": "^4.19.2",
     "typescript": "^5"
+  },
+  "overrides": {
+    "fast-xml-parser": "^5.3.4"
   }
 }
