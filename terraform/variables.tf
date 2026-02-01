@@ -8,3 +8,9 @@ variable "region" {
   type        = string
   default     = "asia-northeast1"
 }
+
+variable "github_repository_id" {
+  description = "GitHub repository ID (numeric)"
+  type        = string
+  default     = "1133304651"
+}
