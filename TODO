@@ -1,5 +1,6 @@
 must:
 - cloud runを作成したら、画像保存用のGCSバケットにCORS設定を追加する
+- デプロイ用のCIを作る(frontend, backendのコードがmainにプッシュされたらdocker build -> artifact registry -> cloud runへのデプロイを行う)
 - リポジトリが公開できる状態になったら、applyのciをplanに含める
 want:
 - 投稿が増えるたびにTTLを更新し、最終更新か起算したTTLで履歴と画像を削除(Cloud Functions連動削除)
