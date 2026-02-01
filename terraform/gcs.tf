@@ -42,3 +42,44 @@ resource "google_storage_bucket" "terraform_state" {
     environment = "global"
   }
 }
+
+# -----------------------------------------------------------------------------
+# Meal Images Bucket
+# -----------------------------------------------------------------------------
+# This bucket stores meal images uploaded by users.
+# Images are automatically deleted after 24 hours.
+
+resource "google_storage_bucket" "meal_images" {
+  name     = "${var.project_id}-meal-images"
+  location = var.region
+
+  # Uniform bucket-level access
+  uniform_bucket_level_access = true
+
+  # CORS configuration for frontend access
+  # Initially allowing all origins (*) for development
+  # TODO: Restrict to specific Cloud Run URL after frontend deployment
+  cors {
+    origin          = ["*"]
+    method          = ["GET", "POST", "PUT", "DELETE"]
+    response_header = ["Content-Type", "Content-Length"]
+    max_age_seconds = 3600
+  }
+
+  # Lifecycle rule: Delete objects after 24 hours
+  lifecycle_rule {
+    condition {
+      age = 1 # days
+    }
+    action {
+      type = "Delete"
+    }
+  }
+
+  labels = {
+    purpose     = "meal-images"
+    managed_by  = "terraform"
+    environment = "production"
+    ttl         = "24h"
+  }
+}
