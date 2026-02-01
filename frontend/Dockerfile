@@ -24,7 +24,6 @@ RUN npm ci --only=production
 
 # ビルド成果物のコピー
 COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
 COPY --from=builder /app/next.config.ts ./
 
 # ポート公開
