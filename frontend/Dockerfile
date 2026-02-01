@@ -24,7 +24,7 @@ RUN npm ci --only=production
 
 # ビルド成果物のコピー
 COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/next.config.ts ./
+# next.config.tsは本番環境では不要（.nextに含まれる）
 
 # ポート公開
 EXPOSE 8080
