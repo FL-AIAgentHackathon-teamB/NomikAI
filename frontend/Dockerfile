@@ -4,7 +4,7 @@ FROM node:20-slim AS builder
 WORKDIR /app
 
 # 依存関係のコピーとインストール
-COPY package*.json ./
+COPY package.json package-lock.json ./
 RUN npm ci
 
 # ソースコードのコピー
@@ -19,7 +19,7 @@ FROM node:20-slim
 WORKDIR /app
 
 # 本番環境用の依存関係のみインストール
-COPY package*.json ./
+COPY package.json package-lock.json ./
 RUN npm ci --only=production
 
 # ビルド成果物のコピー

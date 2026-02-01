@@ -3,16 +3,15 @@ FROM node:20-slim
 
 WORKDIR /app
 
-# 依存関係のコピーとインストール
-COPY package*.json ./
-RUN npm ci --only=production
+# 依存関係のコピーとインストール（devDependencies含む）
+COPY package.json package-lock.json ./
+RUN npm ci
 
 # ソースコードのコピー
 COPY tsconfig.json ./
 COPY src ./src
 
 # TypeScriptのビルド
-RUN npm install -g typescript tsx
 RUN npm run build
 
 # 不要なdevDependenciesを削除

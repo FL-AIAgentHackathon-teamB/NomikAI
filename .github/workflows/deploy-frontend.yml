@@ -14,7 +14,26 @@ env:
   REPOSITORY: nomikai-images
 
 jobs:
+  security-scan:
+    name: 🔒 Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: './frontend'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+
   deploy:
+    name: 🚀 Deploy Frontend
+    needs: security-scan
     runs-on: ubuntu-latest
     permissions:
       contents: read
