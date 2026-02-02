@@ -1,6 +1,6 @@
-# Nomini Backend API
+# NomikAI Backend API
 
-Express + TypeScript で構築されたバックエンドAPIサーバー。
+Express + TypeScript + Genkit で構築されたバックエンドAPIサーバー。
 
 ## 開発サーバーの起動
 
@@ -16,7 +16,7 @@ APIサーバーは http://localhost:3001 で起動します。
 `.env` ファイルを作成し、以下の環境変数を設定:
 
 ```bash
-GEMINI_API_KEY=your_gemini_api_key
+GEMINI_API_KEY=your_gemini_api_key_here
 PORT=3001
 NODE_ENV=development
 FRONTEND_URL=http://localhost:9002
@@ -32,9 +32,10 @@ npm run start
 ## 技術スタック
 
 - **Runtime**: Node.js 20
-- **Framework**: Express
-- **AI**: Google Genkit + Gemini 2.0 Flash
-- **Language**: TypeScript
+- **Framework**: Express 4.x
+- **AI**: Google Genkit 1.20 + Gemini 2.0 Flash
+- **Language**: TypeScript 5.x
+- **Build Tool**: tsx (開発時), tsc (ビルド時)
 - **Deployment**: Cloud Run
 
 ## API エンドポイント
