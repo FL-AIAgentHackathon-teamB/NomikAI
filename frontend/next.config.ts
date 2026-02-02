@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
   // Server Actionsのボディサイズ制限を引き上げ（画像アップロード用）
   experimental: {
     serverActions: {
-      bodySizeLimit: '20mb',
+      bodySizeLimit: '10mb',
     },
   },
   images: {
