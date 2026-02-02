@@ -1,4 +1,4 @@
-# **App Name**: Nomini
+# **App Name**: NomikAI
 
 ## Core Features:
 

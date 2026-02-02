@@ -1,6 +1,6 @@
 # NomikAI - AI食事カロリー分析アプリ
 
-Next.js + Express + Genkit で構築された、食事画像からカロリー推定とアドバイスを行うAIアプリケーション「Nomini」のリポジトリです。
+Next.js + Express + Genkit で構築された、食事画像からカロリー推定とアドバイスを行うAIアプリケーションです。
 
 ## 🏗️ アーキテクチャ
 
