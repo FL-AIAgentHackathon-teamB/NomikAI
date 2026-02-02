@@ -182,7 +182,61 @@ export function MealAnalyzer() {
   const fileToDataUri = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
+      const img = document.createElement('img');
+      
+      reader.onload = (e) => {
+        img.src = e.target?.result as string;
+        
+        img.onload = () => {
+          // キャンバスで画像を圧縮
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          if (!ctx) {
+            reject(new Error('Canvas context が取得できませんでした'));
+            return;
+          }
+          
+          // 最大サイズを設定（長辺を1024pxに制限）
+          const MAX_SIZE = 1024;
+          let width = img.width;
+          let height = img.height;
+          let shouldResize = false;
+          
+          // 長辺がMAX_SIZEを超える場合のみリサイズ
+          if (width > MAX_SIZE || height > MAX_SIZE) {
+            shouldResize = true;
+            if (width > height) {
+              height = (height * MAX_SIZE) / width;
+              width = MAX_SIZE;
+            } else {
+              width = (width * MAX_SIZE) / height;
+              height = MAX_SIZE;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // JPEG形式で品質0.7で圧縮（より積極的に圧縮）
+          let compressedDataUri = canvas.toDataURL('image/jpeg', 0.7);
+          
+          // Base64のサイズをチェック（約5MBを超える場合はさらに圧縮）
+          const sizeInMB = (compressedDataUri.length * 0.75) / (1024 * 1024); // Base64のデコード後のサイズを概算
+          
+          if (sizeInMB > 5) {
+            // さらに圧縮
+            compressedDataUri = canvas.toDataURL('image/jpeg', 0.5);
+          }
+          
+          resolve(compressedDataUri);
+        };
+        
+        img.onerror = () => reject(new Error('画像の読み込みに失敗しました'));
+      };
+      
       reader.onerror = (error) => reject(error);
       reader.readAsDataURL(file);
     });
