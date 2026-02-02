@@ -15,8 +15,8 @@ app.use(cors({
   origin: FRONTEND_URL,
   credentials: true
 }));
-app.use(express.json({limit: '10mb'})); // 画像データのため制限を上げる
-app.use(express.urlencoded({extended: true, limit: '10mb'}));
+app.use(express.json({limit: '20mb'})); // 画像データのため制限を上げる（Base64エンコード後）
+app.use(express.urlencoded({extended: true, limit: '20mb'}));
 
 // ルーティング
 app.use('/api/v1/meals', mealsRouter);
