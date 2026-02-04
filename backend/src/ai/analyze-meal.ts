@@ -12,6 +12,7 @@ const AnalyzeMealAndSuggestRefinementInputSchema = z.object({
       'A photo of the meal, as a data URI that must include a MIME type and use Base64 encoding. Expected format: \'data:<mimetype>;base64,<encoded_data>\'.'
     ),
   remainingCalories: z.number().describe('The remaining calorie intake for the day.'),
+  remainingDishes: z.number().optional().describe('The number of remaining dishes in the course meal (optional).'),
 });
 export type AnalyzeMealAndSuggestRefinementInput = z.infer<typeof AnalyzeMealAndSuggestRefinementInputSchema>;
 
@@ -38,10 +39,18 @@ Analyze the following meal photo: {{media url=photoDataUri}}
 1.  **Identify the dish:** Identify the name of the main dish and set the \`foodName\` field.
 2.  **Estimate calories:** Estimate the calorie count of the meal and set the \`calorieEstimate\` field.
 3.  **Determine verdict:** The user has {{remainingCalories}} calories remaining for the day.
+    {{#if remainingDishes}}
+    - The user is at a course meal with {{remainingDishes}} dishes still to come.
+    - Consider how much of this dish they should eat, keeping in mind the remaining dishes.
+    {{/if}}
     - If the estimated calories are well within the remaining calories, set the \`verdict\` field to "OK".
     - If the estimated calories are close to or exceed the remaining calories, set the \`verdict\` field to "CAUTION".
     - The \`verdict\` field is mandatory.
-4.  **Provide suggestion:** Based on the analysis and verdict, provide a suggestion for the user in the \`suggestedRefinement\` field.`,
+4.  **Provide suggestion:** Based on the analysis and verdict, provide a suggestion for the user in the \`suggestedRefinement\` field.
+    {{#if remainingDishes}}
+    - Make sure to mention how much of this dish they should eat considering the {{remainingDishes}} remaining dishes.
+    - Provide advice on pacing themselves through the course meal.
+    {{/if}}`,
 });
 
 const analyzeMealAndSuggestRefinementFlow = ai.defineFlow(
