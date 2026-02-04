@@ -36,6 +36,12 @@ const formSchema = z.object({
     .number()
     .int()
     .positive(),
+  remainingDishes: z.coerce
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .or(z.literal('')),
   photo: z.any().refine((files) => files?.[0]),
 });
 
@@ -251,6 +257,7 @@ export function MealAnalyzer() {
       const result = await analyzeMeal({
         remainingCalories: data.remainingCalories,
         photoDataUri,
+        ...(data.remainingDishes && { remainingDishes: data.remainingDishes }),
       });
 
       if (result.success && result.data) {
@@ -332,6 +339,25 @@ export function MealAnalyzer() {
                       {...field}
                       value={field.value ?? ''}
                       onChange={(e) => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="remainingDishes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>残りの品数（任意）</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      placeholder="例: 3（コース料理で残り3品来る場合）"
+                      className="[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                      {...field}
+                      value={field.value ?? ''}
+                      onChange={(e) => field.onChange(e.target.value === '' ? '' : e.target.valueAsNumber)}
                     />
                   </FormControl>
                 </FormItem>
