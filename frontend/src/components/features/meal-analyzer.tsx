@@ -24,7 +24,7 @@ import {
   FormLabel,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { analyzeMeal } from "@/app/actions";
+import { analyzeMeal, reanalyzeMeal as reanalyzeMealAction } from "@/app/actions";
 import type { AnalyzeMealAndSuggestRefinementOutput } from "@/ai/flows/analyze-meal-and-suggest-refinement";
 import { 
   Loader2, 
@@ -38,7 +38,9 @@ import {
   CheckCircle2,
   ArrowUp,
   ArrowDown,
-  PartyPopper
+  PartyPopper,
+  Pencil,
+  Check
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -235,37 +237,117 @@ interface SessionHeaderProps {
 }
 
 const SessionHeader = ({ session }: SessionHeaderProps) => {
+  const [displayedCalories, setDisplayedCalories] = useState(session.remainingCalories);
   const progress = (session.remainingCalories / session.targetCalories) * 100;
-  const consumedCalories = session.targetCalories - session.remainingCalories;
+  const displayedProgress = (displayedCalories / session.targetCalories) * 100;
+  const isOverCalories = session.remainingCalories < 0;
+  const overAmount = Math.abs(session.remainingCalories);
   
-  const progressColor = progress > 50 ? 'bg-green-500' : progress > 20 ? 'bg-yellow-500' : 'bg-red-500';
+  // 残りカロリーの割合に応じて色を変更
+  const getColorClasses = () => {
+    if (isOverCalories || progress < 40) {
+      return {
+        text: 'text-red-500',
+        icon: 'text-red-500',
+        progress: 'bg-red-500'
+      };
+    } else if (progress < 60) {
+      return {
+        text: 'text-yellow-500',
+        icon: 'text-yellow-500',
+        progress: 'bg-yellow-500'
+      };
+    } else {
+      return {
+        text: 'text-primary',
+        icon: 'text-primary',
+        progress: 'bg-primary'
+      };
+    }
+  };
+  
+  const colorClasses = getColorClasses();
+
+  // カロリーが変わったらアニメーション
+  useEffect(() => {
+    const startValue = displayedCalories;
+    const endValue = session.remainingCalories;
+    const duration = 800; // 0.8秒
+    const startTime = Date.now();
+
+    const animate = () => {
+      const now = Date.now();
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // イージング関数（ease-out）
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = startValue + (endValue - startValue) * eased;
+      
+      setDisplayedCalories(Math.round(current));
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+    
+    requestAnimationFrame(animate);
+  }, [session.remainingCalories]);
 
   return (
-    <Card className="w-full mb-6">
-      <CardContent className="pt-6 space-y-4">
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <span className="text-sm font-semibold">残りカロリー</span>
-            <span className="text-lg font-bold">
-              {session.remainingCalories} / {session.targetCalories} kcal
-            </span>
+    <div className="sticky top-4 z-40 mb-6">
+      <Card className="w-full bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+        <CardContent className="py-3 px-4">
+          <div className="flex items-center justify-between gap-4">
+            {/* 残りカロリー表示（コンパクト） */}
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <Flame className={`h-4 w-4 flex-shrink-0 ${colorClasses.icon}`} />
+              <div className="min-w-0 flex-1">
+                {isOverCalories ? (
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-base font-bold text-red-500">
+                      {Math.abs(displayedCalories)} kcal
+                    </span>
+                    <span className="text-xs font-bold text-red-500/70">
+                      オーバー
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-baseline gap-1">
+                    <span className={`text-base font-bold ${colorClasses.text}`}>
+                      残り {displayedCalories}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      / {session.targetCalories} kcal
+                    </span>
+                  </div>
+                )}
+                <div className="relative h-1.5 mt-1 bg-secondary rounded-full overflow-hidden">
+                  <div 
+                    className={`absolute inset-y-0 left-0 ${colorClasses.progress} rounded-full`}
+                    style={{ width: `${Math.min(displayedProgress, 100)}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+            
+            {/* 残りの品数（あれば） */}
+            {session.remainingDishes !== undefined && (
+              <Badge variant="secondary" className="flex-shrink-0">
+                <UtensilsCrossed className="h-3 w-3 mr-1" />
+                {session.remainingDishes > 0 ? (
+                  <>残り {session.remainingDishes} 品</>
+                ) : session.remainingDishes === 0 ? (
+                  <>残り 0 品</>
+                ) : (
+                  <>おかわり +{Math.abs(session.remainingDishes)} 品</>
+                )}
+              </Badge>
+            )}
           </div>
-          <Progress value={progress} className="h-3" />
-          <p className="text-xs text-muted-foreground text-right">
-            消費: {consumedCalories} kcal
-          </p>
-        </div>
-        
-        {session.remainingDishes !== undefined && (
-          <div className="flex justify-between items-center pt-2 border-t">
-            <span className="text-sm font-semibold">残りの品数</span>
-            <Badge variant="outline" className="text-base">
-              あと {session.remainingDishes} 品
-            </Badge>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
@@ -327,21 +409,119 @@ const ConsumptionSelector = ({ onSelect, selected, estimate }: ConsumptionSelect
 interface MealCardProps {
   meal: Meal;
   onSelectConsumption: (level: ConsumptionLevel) => void;
+  onReanalyze: (mealId: string, newName: string) => Promise<void>;
 }
 
-const MealCard = ({ meal, onSelectConsumption }: MealCardProps) => {
+const MealCard = ({ meal, onSelectConsumption, onReanalyze }: MealCardProps) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedName, setEditedName] = useState(meal.foodName);
+  const [isReanalyzing, setIsReanalyzing] = useState(false);
+  const { toast } = useToast();
+
+  // mealが更新されたらeditedNameも更新
+  useEffect(() => {
+    setEditedName(meal.foodName);
+  }, [meal.foodName]);
+
+  const handleEdit = () => {
+    setIsEditing(true);
+    setEditedName(meal.foodName);
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setEditedName(meal.foodName);
+  };
+
+  const handleSave = async () => {
+    if (!editedName.trim()) {
+      toast({
+        variant: "destructive",
+        title: "エラー",
+        description: "メニュー名を入力してください",
+      });
+      return;
+    }
+    
+    setIsReanalyzing(true);
+    setIsEditing(false);
+    try {
+      await onReanalyze(meal.id, editedName.trim());
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "エラー",
+        description: "再分析に失敗しました",
+      });
+      setIsEditing(true);
+    } finally {
+      setIsReanalyzing(false);
+    }
+  };
+
   return (
     <Card className="w-full mb-4 overflow-hidden">
       <div className="relative w-full aspect-video">
         <Image src={meal.imageUrl} alt={meal.foodName} fill className="object-cover" />
       </div>
-      <CardContent className="space-y-4 pt-6">
+      
+      {isReanalyzing ? (
+        <CardContent className="py-20 flex flex-col items-center justify-center">
+          <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+          <p className="text-muted-foreground">分析し直しています...</p>
+        </CardContent>
+      ) : (
+        <CardContent className="space-y-4 pt-6">
         <div className="flex items-center gap-4">
           <div className="bg-primary/10 p-2 rounded-full">
             <UtensilsCrossed className="h-6 w-6 text-primary" />
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <p className="font-bold text-foreground text-lg">{meal.foodName}</p>
+          <div className="flex items-center gap-2 flex-wrap flex-1">
+            {isEditing ? (
+              <div className="flex items-center gap-2 flex-1">
+                <Input
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  className="flex-1 text-lg font-bold"
+                  disabled={isReanalyzing}
+                  autoFocus
+                />
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={handleSave}
+                  disabled={isReanalyzing}
+                  className="h-8 w-8 hover:bg-transparent"
+                >
+                  {isReanalyzing ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <Check className="h-5 w-5 stroke-[3] text-green-600" />
+                  )}
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={handleCancel}
+                  disabled={isReanalyzing}
+                  className="h-8 w-8 hover:bg-transparent"
+                >
+                  <X className="h-5 w-5 stroke-[3] text-red-600" />
+                </Button>
+              </div>
+            ) : (
+              <>
+                <p className="font-bold text-foreground text-lg">{meal.foodName}</p>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={handleEdit}
+                  className="h-8 w-8"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              </>
+            )}
           </div>
         </div>
         
@@ -395,7 +575,8 @@ const MealCard = ({ meal, onSelectConsumption }: MealCardProps) => {
             selected={meal.consumptionLevel}
           />
         )}
-      </CardContent>
+        </CardContent>
+      )}
     </Card>
   );
 };
@@ -411,8 +592,21 @@ interface NewMealInputProps {
 const NewMealInput = ({ remainingCalories, remainingDishes, onAnalyze }: NewMealInputProps) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isExpanded, setIsExpanded] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  // 残り品数が0の場合は自動的に折りたたむ
+  useEffect(() => {
+    if (remainingDishes !== undefined && remainingDishes <= 0) {
+      setIsExpanded(false);
+      // 画像プレビューもリセット
+      setImagePreview(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  }, [remainingDishes]);
 
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -443,6 +637,10 @@ const NewMealInput = ({ remainingCalories, remainingDishes, onAnalyze }: NewMeal
         if (fileInputRef.current) {
           fileInputRef.current.value = "";
         }
+        // 残り品数が0以下の場合は再び折りたたむ
+        if (remainingDishes !== undefined && remainingDishes - 1 <= 0) {
+          setIsExpanded(false);
+        }
       } else {
         toast({
           variant: "destructive",
@@ -467,6 +665,24 @@ const NewMealInput = ({ remainingCalories, remainingDishes, onAnalyze }: NewMeal
       fileInputRef.current.value = "";
     }
   };
+
+  // 残り品数が0の場合は「もっと食べる」ボタンを表示
+  if (remainingDishes !== undefined && remainingDishes <= 0 && !isExpanded) {
+    return (
+      <Card className="w-full">
+        <CardContent className="py-6">
+          <Button 
+            onClick={() => setIsExpanded(true)}
+            className="w-full"
+            variant="outline"
+          >
+            <UtensilsCrossed className="mr-2 h-4 w-4" />
+            もっと食べる
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full">
@@ -541,6 +757,7 @@ interface SessionViewProps {
   meals: Meal[];
   onAddMeal: (result: AnalyzeMealAndSuggestRefinementOutput, imageUrl: string) => void;
   onSelectConsumption: (mealId: string, level: ConsumptionLevel) => void;
+  onReanalyze: (mealId: string, newName: string) => Promise<void>;
   onEndSession: () => void;
 }
 
@@ -549,6 +766,7 @@ const SessionView = ({
   meals, 
   onAddMeal, 
   onSelectConsumption,
+  onReanalyze,
   onEndSession 
 }: SessionViewProps) => {
   return (
@@ -561,11 +779,13 @@ const SessionView = ({
             key={meal.id}
             meal={meal}
             onSelectConsumption={(level) => onSelectConsumption(meal.id, level)}
+            onReanalyze={onReanalyze}
           />
         ))}
       </div>
 
       <NewMealInput
+        key={meals.length}
         remainingCalories={session.remainingCalories}
         remainingDishes={session.remainingDishes}
         onAnalyze={onAddMeal}
@@ -642,7 +862,7 @@ export function MealAnalyzer() {
     // メニューを追加した時点で品数を減らす
     const updatedSession: Session = {
       ...session,
-      remainingDishes: session.remainingDishes ? session.remainingDishes - 1 : undefined,
+      remainingDishes: session.remainingDishes !== undefined ? session.remainingDishes - 1 : undefined,
     };
     setSession(updatedSession);
     localStorage.setItem('currentSession', JSON.stringify(updatedSession));
@@ -670,6 +890,52 @@ export function MealAnalyzer() {
     localStorage.setItem('currentSession', JSON.stringify(updatedSession));
   };
 
+  const reanalyzeMealFunc = async (mealId: string, newName: string) => {
+    const meal = meals.find(m => m.id === mealId);
+    if (!meal || !session) return;
+
+    // 新しい名前で再分析（再分析用の専用エンドポイント）
+    const result = await reanalyzeMealAction({
+      photoDataUri: meal.imageUrl,
+      customFoodName: newName,
+      remainingCalories: session.remainingCalories,
+      ...(session.remainingDishes !== undefined && { remainingDishes: session.remainingDishes }),
+    });
+
+    if (result.success && result.data) {
+      // 既に消費量を選択済みの場合は、一旦カロリーを戻す
+      let adjustedRemainingCalories = session.remainingCalories;
+      if (meal.actualCalories !== undefined) {
+        adjustedRemainingCalories += meal.actualCalories;
+      }
+
+      // メニュー情報を更新（消費量選択はリセット）
+      const updatedMeals = meals.map(m =>
+        m.id === mealId ? {
+          ...m,
+          foodName: result.data.foodName,
+          calorieEstimate: result.data.calorieEstimate,
+          suggestedRefinement: result.data.suggestedRefinement,
+          verdict: result.data.verdict,
+          consumptionLevel: undefined,
+          actualCalories: undefined,
+        } : m
+      );
+      setMeals(updatedMeals);
+      localStorage.setItem('sessionMeals', JSON.stringify(updatedMeals));
+
+      // セッション更新
+      const updatedSession: Session = {
+        ...session,
+        remainingCalories: adjustedRemainingCalories,
+      };
+      setSession(updatedSession);
+      localStorage.setItem('currentSession', JSON.stringify(updatedSession));
+    } else {
+      throw new Error(result.error || '再分析に失敗しました');
+    }
+  };
+
   const endSession = () => {
     setSession(null);
     setMeals([]);
@@ -689,6 +955,7 @@ export function MealAnalyzer() {
       meals={meals}
       onAddMeal={addMeal}
       onSelectConsumption={selectConsumption}
+      onReanalyze={reanalyzeMealFunc}
       onEndSession={endSession}
     />
   );

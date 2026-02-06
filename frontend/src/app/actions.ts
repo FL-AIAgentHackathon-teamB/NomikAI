@@ -53,3 +53,35 @@ export async function analyzeMeal(input: AnalyzeMealAndSuggestRefinementInput) {
         return { success: false, error: `Failed to analyze meal. ${errorMessage}` };
     }
 }
+
+interface ReanalyzeMealInput {
+    photoDataUri: string;
+    customFoodName: string;
+    remainingCalories: number;
+    remainingDishes?: number;
+}
+
+export async function reanalyzeMeal(input: ReanalyzeMealInput) {
+    try {
+        // バックエンドAPIの再分析エンドポイントを呼び出す（IAM認証付き）
+        const response = await fetchWithAuth(`${BACKEND_URL}/api/v1/meals/reanalyze`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(input),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'API request failed');
+        }
+
+        const result = await response.json();
+        return result;
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
+        console.error("Error reanalyzing meal:", error);
+        return { success: false, error: `Failed to reanalyze meal. ${errorMessage}` };
+    }
+}
