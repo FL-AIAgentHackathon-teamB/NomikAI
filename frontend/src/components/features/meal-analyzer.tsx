@@ -562,7 +562,7 @@ const MealCard = ({ meal, onSelectConsumption, onReanalyze }: MealCardProps) => 
 
         {meal.actualCalories !== undefined && (
           <div className="pt-4 border-t">
-            <p className="text-sm font-semibold text-green-600">
+            <p className="text-base font-semibold text-green-600">
               実際の摂取: {meal.actualCalories} kcal
             </p>
           </div>
@@ -760,6 +760,12 @@ const NewMealInput = ({ remainingCalories, remainingDishes, onAnalyze }: NewMeal
               </>
             )}
           </Label>
+          {imagePreview && isPreAnalyzing && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-2">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              <span>メニューを解析中...</span>
+            </div>
+          )}
         </div>
         <Button 
           onClick={handleAnalyze} 
@@ -769,7 +775,7 @@ const NewMealInput = ({ remainingCalories, remainingDishes, onAnalyze }: NewMeal
           {isAnalyzing ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              分析中...
+              {preAnalyzedResult ? '結果を追加中...' : '分析中...'}
             </>
           ) : (
             <>
