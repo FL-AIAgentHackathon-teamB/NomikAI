@@ -593,6 +593,8 @@ const NewMealInput = ({ remainingCalories, remainingDishes, onAnalyze }: NewMeal
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(true);
+  const [preAnalyzedResult, setPreAnalyzedResult] = useState<AnalyzeMealAndSuggestRefinementOutput | null>(null);
+  const [isPreAnalyzing, setIsPreAnalyzing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -612,28 +614,58 @@ const NewMealInput = ({ remainingCalories, remainingDishes, onAnalyze }: NewMeal
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
+      reader.onloadend = async () => {
+        const dataUri = reader.result as string;
+        setImagePreview(dataUri);
+        
+        // 写真がアップロードされたら即座に先行分析を開始
+        setIsPreAnalyzing(true);
+        setPreAnalyzedResult(null);
+        try {
+          const result = await analyzeMeal({
+            photoDataUri: dataUri,
+            remainingCalories,
+            ...(remainingDishes && { remainingDishes }),
+          });
+
+          if (result.success && result.data) {
+            setPreAnalyzedResult(result.data);
+          }
+        } catch (error) {
+          // 先行分析が失敗してもユーザーには見せない（ボタン押下時に再試行）
+          console.error('Pre-analysis failed:', error);
+        } finally {
+          setIsPreAnalyzing(false);
+        }
       };
       reader.readAsDataURL(file);
     }
   };
 
   const handleAnalyze = async () => {
-    if (!fileInputRef.current?.files?.[0]) return;
+    if (!fileInputRef.current?.files?.[0] || !imagePreview) return;
 
     setIsAnalyzing(true);
     try {
-      const photoDataUri = await fileToDataUri(fileInputRef.current.files[0]);
-      const result = await analyzeMeal({
-        photoDataUri,
-        remainingCalories,
-        ...(remainingDishes && { remainingDishes }),
-      });
+      let result;
+      
+      // 先行分析の結果があればそれを使う
+      if (preAnalyzedResult) {
+        result = { success: true, data: preAnalyzedResult };
+      } else {
+        // 先行分析が間に合わなかった場合は通常通り分析
+        const photoDataUri = await fileToDataUri(fileInputRef.current.files[0]);
+        result = await analyzeMeal({
+          photoDataUri,
+          remainingCalories,
+          ...(remainingDishes && { remainingDishes }),
+        });
+      }
 
       if (result.success && result.data) {
-        onAnalyze(result.data, photoDataUri);
+        onAnalyze(result.data, imagePreview);
         setImagePreview(null);
+        setPreAnalyzedResult(null);
         if (fileInputRef.current) {
           fileInputRef.current.value = "";
         }
@@ -661,6 +693,7 @@ const NewMealInput = ({ remainingCalories, remainingDishes, onAnalyze }: NewMeal
 
   const removeImage = () => {
     setImagePreview(null);
+    setPreAnalyzedResult(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
