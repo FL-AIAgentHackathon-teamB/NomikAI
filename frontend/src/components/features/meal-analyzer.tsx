@@ -324,7 +324,7 @@ const SessionHeader = ({ session }: SessionHeaderProps) => {
                 )}
                 <div className="relative h-1.5 mt-1 bg-secondary rounded-full overflow-hidden">
                   <div 
-                    className={`absolute inset-y-0 left-0 ${colorClasses.progress} rounded-full`}
+                    className={`absolute inset-y-0 left-0 ${colorClasses.progress} rounded-full transition-all duration-700 ease-out`}
                     style={{ width: `${Math.min(displayedProgress, 100)}%` }}
                   />
                 </div>
@@ -614,58 +614,28 @@ const NewMealInput = ({ remainingCalories, remainingDishes, onAnalyze }: NewMeal
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = async () => {
-        const dataUri = reader.result as string;
-        setImagePreview(dataUri);
-        
-        // 写真がアップロードされたら即座に先行分析を開始
-        setIsPreAnalyzing(true);
-        setPreAnalyzedResult(null);
-        try {
-          const result = await analyzeMeal({
-            photoDataUri: dataUri,
-            remainingCalories,
-            ...(remainingDishes && { remainingDishes }),
-          });
-
-          if (result.success && result.data) {
-            setPreAnalyzedResult(result.data);
-          }
-        } catch (error) {
-          // 先行分析が失敗してもユーザーには見せない（ボタン押下時に再試行）
-          console.error('Pre-analysis failed:', error);
-        } finally {
-          setIsPreAnalyzing(false);
-        }
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
   };
 
   const handleAnalyze = async () => {
-    if (!fileInputRef.current?.files?.[0] || !imagePreview) return;
+    if (!fileInputRef.current?.files?.[0]) return;
 
     setIsAnalyzing(true);
     try {
-      let result;
-      
-      // 先行分析の結果があればそれを使う
-      if (preAnalyzedResult) {
-        result = { success: true, data: preAnalyzedResult };
-      } else {
-        // 先行分析が間に合わなかった場合は通常通り分析
-        const photoDataUri = await fileToDataUri(fileInputRef.current.files[0]);
-        result = await analyzeMeal({
-          photoDataUri,
-          remainingCalories,
-          ...(remainingDishes && { remainingDishes }),
-        });
-      }
+      const photoDataUri = await fileToDataUri(fileInputRef.current.files[0]);
+      const result = await analyzeMeal({
+        photoDataUri,
+        remainingCalories,
+        ...(remainingDishes && { remainingDishes }),
+      });
 
       if (result.success && result.data) {
-        onAnalyze(result.data, imagePreview);
+        onAnalyze(result.data, photoDataUri);
         setImagePreview(null);
-        setPreAnalyzedResult(null);
         if (fileInputRef.current) {
           fileInputRef.current.value = "";
         }
@@ -693,7 +663,6 @@ const NewMealInput = ({ remainingCalories, remainingDishes, onAnalyze }: NewMeal
 
   const removeImage = () => {
     setImagePreview(null);
-    setPreAnalyzedResult(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -760,12 +729,6 @@ const NewMealInput = ({ remainingCalories, remainingDishes, onAnalyze }: NewMeal
               </>
             )}
           </Label>
-          {imagePreview && isPreAnalyzing && (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-2">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              <span>メニューを解析中...</span>
-            </div>
-          )}
         </div>
         <Button 
           onClick={handleAnalyze} 
@@ -775,7 +738,7 @@ const NewMealInput = ({ remainingCalories, remainingDishes, onAnalyze }: NewMeal
           {isAnalyzing ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {preAnalyzedResult ? '結果を追加中...' : '分析中...'}
+              分析中...
             </>
           ) : (
             <>
