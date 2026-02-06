@@ -9,10 +9,8 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   // Server Actionsのボディサイズ制限を引き上げ（画像アップロード用）
-  experimental: {
-    serverActions: {
-      bodySizeLimit: '10mb',
-    },
+  serverActions: {
+    bodySizeLimit: '10mb',
   },
   images: {
     remotePatterns: [
