@@ -29,7 +29,7 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
     return fetch(url, { ...options, headers });
 }
 
-export async function analyzeMeal(input: AnalyzeMealAndSuggestRefinementInput) {
+export async function analyzeMeal(input: AnalyzeMealAndSuggestRefinementInput & { remainingDishes?: number }) {
     try {
         // 現在分析中のメニューを除いた残り品数を渡す
         const adjustedInput = {
