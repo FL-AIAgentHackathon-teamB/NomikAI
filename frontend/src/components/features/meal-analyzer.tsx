@@ -238,20 +238,20 @@ interface SessionHeaderProps {
 
 const SessionHeader = ({ session }: SessionHeaderProps) => {
   const [displayedCalories, setDisplayedCalories] = useState(session.remainingCalories);
+  const [displayedProgress, setDisplayedProgress] = useState((session.remainingCalories / session.targetCalories) * 100);
   const progress = (session.remainingCalories / session.targetCalories) * 100;
-  const displayedProgress = (displayedCalories / session.targetCalories) * 100;
   const isOverCalories = session.remainingCalories < 0;
   const overAmount = Math.abs(session.remainingCalories);
   
   // 残りカロリーの割合に応じて色を変更
   const getColorClasses = () => {
-    if (isOverCalories || progress < 40) {
+    if (isOverCalories) {
       return {
         text: 'text-red-500',
         icon: 'text-red-500',
         progress: 'bg-red-500'
       };
-    } else if (progress < 60) {
+    } else if (progress < 40) {
       return {
         text: 'text-yellow-500',
         icon: 'text-yellow-500',
@@ -272,7 +272,9 @@ const SessionHeader = ({ session }: SessionHeaderProps) => {
   useEffect(() => {
     const startValue = displayedCalories;
     const endValue = session.remainingCalories;
-    const duration = 800; // 0.8秒
+    const startProgress = displayedProgress;
+    const endProgress = (session.remainingCalories / session.targetCalories) * 100;
+    const duration = 1000; // 1秒に統一
     const startTime = Date.now();
 
     const animate = () => {
@@ -282,9 +284,11 @@ const SessionHeader = ({ session }: SessionHeaderProps) => {
       
       // イージング関数（ease-out）
       const eased = 1 - Math.pow(1 - progress, 3);
-      const current = startValue + (endValue - startValue) * eased;
+      const currentCalories = startValue + (endValue - startValue) * eased;
+      const currentProgress = startProgress + (endProgress - startProgress) * eased;
       
-      setDisplayedCalories(Math.round(current));
+      setDisplayedCalories(Math.round(currentCalories));
+      setDisplayedProgress(currentProgress);
       
       if (progress < 1) {
         requestAnimationFrame(animate);
@@ -292,7 +296,7 @@ const SessionHeader = ({ session }: SessionHeaderProps) => {
     };
     
     requestAnimationFrame(animate);
-  }, [session.remainingCalories]);
+  }, [session.remainingCalories, session.targetCalories]);
 
   return (
     <div className="sticky top-4 z-40 mb-6">
@@ -305,11 +309,12 @@ const SessionHeader = ({ session }: SessionHeaderProps) => {
               <div className="min-w-0 flex-1">
                 {isOverCalories ? (
                   <div className="flex items-baseline gap-1">
+                    <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0 translate-y-0.5 translate-x-0.5" />
                     <span className="text-base font-bold text-red-500">
                       {Math.abs(displayedCalories)} kcal
                     </span>
                     <span className="text-xs font-bold text-red-500/70">
-                      オーバー
+                      オーバー！
                     </span>
                   </div>
                 ) : (
@@ -324,7 +329,7 @@ const SessionHeader = ({ session }: SessionHeaderProps) => {
                 )}
                 <div className="relative h-1.5 mt-1 bg-secondary rounded-full overflow-hidden">
                   <div 
-                    className={`absolute inset-y-0 left-0 ${colorClasses.progress} rounded-full transition-all duration-700 ease-out`}
+                    className={`absolute inset-y-0 left-0 ${colorClasses.progress} rounded-full`}
                     style={{ width: `${Math.min(displayedProgress, 100)}%` }}
                   />
                 </div>
