@@ -7,7 +7,7 @@ const mealService = new MealService();
 // POST /api/v1/meals/analyze
 router.post('/analyze', async (req: Request, res: Response) => {
   try {
-    const {photoDataUri, remainingCalories} = req.body;
+    const {photoDataUri, remainingCalories, remainingDishes} = req.body;
 
     // バリデーション
     if (!photoDataUri || typeof photoDataUri !== 'string') {
@@ -27,7 +27,8 @@ router.post('/analyze', async (req: Request, res: Response) => {
     // AI分析実行
     const result = await mealService.analyzeMeal({
       photoDataUri,
-      remainingCalories
+      remainingCalories,
+      ...(remainingDishes !== undefined && { remainingDishes })
     });
 
     if (!result.success) {
@@ -47,7 +48,7 @@ router.post('/analyze', async (req: Request, res: Response) => {
 // POST /api/v1/meals/reanalyze
 router.post('/reanalyze', async (req: Request, res: Response) => {
   try {
-    const {photoDataUri, customFoodName, remainingCalories} = req.body;
+    const {photoDataUri, customFoodName, remainingCalories, remainingDishes} = req.body;
 
     // バリデーション
     if (!photoDataUri || typeof photoDataUri !== 'string') {
@@ -75,7 +76,8 @@ router.post('/reanalyze', async (req: Request, res: Response) => {
     const result = await mealService.reanalyzeMeal({
       photoDataUri,
       customFoodName,
-      remainingCalories
+      remainingCalories,
+      ...(remainingDishes !== undefined && { remainingDishes })
     });
 
     if (!result.success) {

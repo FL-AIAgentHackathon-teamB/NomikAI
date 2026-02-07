@@ -41,6 +41,7 @@ Analyze the following meal photo: {{media url=photoDataUri}}
 3.  **Determine verdict:** The user has {{remainingCalories}} calories remaining for the day.
     {{#if remainingDishes}}
     - The user is at a course meal with {{remainingDishes}} dishes still to come.
+    - If remainingDishes is NEGATIVE, it means the user has already exceeded the planned number of dishes (おかわり状態). Be MORE cautious with recommendations.
     - Consider how much of this dish they should eat, keeping in mind the remaining dishes.
     {{/if}}
     - If the estimated calories are well within the remaining calories, set the \`verdict\` field to "OK".
@@ -48,9 +49,30 @@ Analyze the following meal photo: {{media url=photoDataUri}}
     - The \`verdict\` field is mandatory.
 4.  **Provide suggestion:** Based on the analysis and verdict, provide a suggestion for the user in the \`suggestedRefinement\` field.
     {{#if remainingDishes}}
-    - Make sure to mention how much of this dish they should eat considering the {{remainingDishes}} remaining dishes.
-    - Provide advice on pacing themselves through the course meal.
-    {{/if}}`,
+    - Consider the balance between remaining dishes ({{remainingDishes}}) and remaining calories ({{remainingCalories}}kcal) to provide pacing advice:
+      * If many dishes remain but calories are running low: Suggest restraint now (e.g., "この後まだ{{remainingDishes}}品来ることを考えて、今は少し控えめにしましょう")
+      * If few dishes remain but calories are still plenty: Encourage eating more (e.g., "残り{{remainingDishes}}品でカロリーはまだ{{remainingCalories}}kcal残っているので、前半我慢した分、食べちゃっても良いかもしれませんね")
+      * For balanced situations: Give straightforward pacing advice
+    - Do NOT suggest menu choices (like "野菜を選ぶ") as course meals cannot be customized.
+    {{else}}
+    - Provide general nutritional context about this dish without suggesting other meals or menu changes.
+    {{/if}}
+    - **IMPORTANT: Provide BOTH specific quantities AND nutritional advice:**
+      
+      CRITICAL: The user will select one of three buttons:
+      - "提案通り" = eat ~70% of the dish (YOUR RECOMMENDATION)
+      - "もっと食べる" = eat 100% of the dish
+      - "少しだけ" = eat ~30% of the dish
+      
+      Your response should include:
+      1. Specific consumption recommendation for the ~70% level: "提案としては[X個/X杯]がおすすめです。"
+         - Do NOT say "全部食べる" as the recommendation, since that would be "もっと食べる" (100%)
+         - Be clear this is for ~70% consumption
+      2. IF the photo shows a personal serving/small plate, ADD: "全部食べると約[カロリー]kcalになります。"
+         - Do NOT add this if it's a large shared dish
+      3. Nutritional context and advice (2-3 sentences)
+      
+      Make sure BOTH the quantity guidance AND nutritional advice are included.`,
 });
 
 const analyzeMealAndSuggestRefinementFlow = ai.defineFlow(
@@ -108,6 +130,7 @@ Photo for reference: {{media url=photoDataUri}}
 3.  **Determine verdict:** The user has {{remainingCalories}} calories remaining for the day.
     {{#if remainingDishes}}
     - The user is at a course meal with {{remainingDishes}} dishes still to come.
+    - If remainingDishes is NEGATIVE, it means the user has already exceeded the planned number of dishes (おかわり状態). Be MORE cautious with recommendations.
     - Consider how much of this dish they should eat, keeping in mind the remaining dishes.
     {{/if}}
     - If the estimated calories are well within the remaining calories, set the \`verdict\` field to "OK".
@@ -115,9 +138,30 @@ Photo for reference: {{media url=photoDataUri}}
     - The \`verdict\` field is mandatory.
 4.  **Provide suggestion:** Based on the analysis and verdict, provide a suggestion for the user in the \`suggestedRefinement\` field.
     {{#if remainingDishes}}
-    - Make sure to mention how much of this dish they should eat considering the {{remainingDishes}} remaining dishes.
-    - Provide advice on pacing themselves through the course meal.
-    {{/if}}`,
+    - Consider the balance between remaining dishes ({{remainingDishes}}) and remaining calories ({{remainingCalories}}kcal) to provide pacing advice:
+      * If many dishes remain but calories are running low: Suggest restraint now (e.g., "この後まだ{{remainingDishes}}品来ることを考えて、今は少し控えめにしましょう")
+      * If few dishes remain but calories are still plenty: Encourage eating more (e.g., "残り{{remainingDishes}}品でカロリーはまだ{{remainingCalories}}kcal残っているので、前半我慢した分、食べちゃっても良いかもしれませんね")
+      * For balanced situations: Give straightforward pacing advice
+    - Do NOT suggest menu choices (like "野菜を選ぶ") as course meals cannot be customized.
+    {{else}}
+    - Provide general nutritional context about this dish without suggesting other meals or menu changes.
+    {{/if}}
+    - **IMPORTANT: Provide BOTH specific quantities AND nutritional advice:**
+      
+      CRITICAL: The user will select one of three buttons:
+      - "提案通り" = eat ~70% of the dish (YOUR RECOMMENDATION)
+      - "もっと食べる" = eat 100% of the dish
+      - "少しだけ" = eat ~30% of the dish
+      
+      Your response should include:
+      1. Specific consumption recommendation for the ~70% level: "提案としては[X個/X杯]がおすすめです。"
+         - Do NOT say "全部食べる" as the recommendation, since that would be "もっと食べる" (100%)
+         - Be clear this is for ~70% consumption
+      2. IF the photo shows a personal serving/small plate, ADD: "全部（[Y個/Y杯]）食べると[カロリー]kcalになります。"
+         - Do NOT add this if it's a large shared dish
+      3. Nutritional context and advice (2-3 sentences)
+      
+      Make sure BOTH the quantity guidance AND nutritional advice are included.`,
 });
 
 const reanalyzeMealWithCustomNameFlow = ai.defineFlow(

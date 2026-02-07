@@ -31,13 +31,21 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
 
 export async function analyzeMeal(input: AnalyzeMealAndSuggestRefinementInput) {
     try {
+        // 現在分析中のメニューを除いた残り品数を渡す
+        const adjustedInput = {
+            ...input,
+            ...(input.remainingDishes !== undefined && {
+                remainingDishes: input.remainingDishes - 1
+            })
+        };
+
         // バックエンドAPIを呼び出す（IAM認証付き）
         const response = await fetchWithAuth(`${BACKEND_URL}/api/v1/meals/analyze`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(input),
+            body: JSON.stringify(adjustedInput),
         });
 
         if (!response.ok) {
@@ -63,13 +71,21 @@ interface ReanalyzeMealInput {
 
 export async function reanalyzeMeal(input: ReanalyzeMealInput) {
     try {
+        // 現在分析中のメニューを除いた残り品数を渡す
+        const adjustedInput = {
+            ...input,
+            ...(input.remainingDishes !== undefined && {
+                remainingDishes: input.remainingDishes - 1
+            })
+        };
+
         // バックエンドAPIの再分析エンドポイントを呼び出す（IAM認証付き）
         const response = await fetchWithAuth(`${BACKEND_URL}/api/v1/meals/reanalyze`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(input),
+            body: JSON.stringify(adjustedInput),
         });
 
         if (!response.ok) {
