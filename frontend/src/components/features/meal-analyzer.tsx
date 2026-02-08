@@ -550,13 +550,13 @@ const MealCard = ({ meal, onSelectConsumption, onReanalyze }: MealCardProps) => 
           <div className="bg-primary/10 p-2 rounded-full">
             <UtensilsCrossed className="h-6 w-6 text-primary" />
           </div>
-          <div className="flex items-center gap-2 flex-wrap flex-1">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
             {isEditing ? (
-              <div className="flex items-center gap-2 flex-1">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
                 <Input
                   value={editedName}
                   onChange={(e) => setEditedName(e.target.value)}
-                  className="flex-1 text-lg font-bold"
+                  className="flex-1 text-lg font-bold min-w-0"
                   disabled={isReanalyzing}
                   autoFocus
                   maxLength={15}
@@ -567,7 +567,7 @@ const MealCard = ({ meal, onSelectConsumption, onReanalyze }: MealCardProps) => 
                   variant="ghost"
                   onClick={handleSave}
                   disabled={isReanalyzing}
-                  className="h-8 w-8 hover:bg-transparent"
+                  className="h-8 w-8 hover:bg-transparent flex-shrink-0"
                 >
                   {isReanalyzing ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
@@ -580,19 +580,19 @@ const MealCard = ({ meal, onSelectConsumption, onReanalyze }: MealCardProps) => 
                   variant="ghost"
                   onClick={handleCancel}
                   disabled={isReanalyzing}
-                  className="h-8 w-8 hover:bg-transparent"
+                  className="h-8 w-8 hover:bg-transparent flex-shrink-0"
                 >
                   <X className="h-5 w-5 stroke-[3] text-red-600" />
                 </Button>
               </div>
             ) : (
               <>
-                <p className="font-bold text-foreground text-lg">{meal.foodName}</p>
+                <p className="font-bold text-foreground text-lg truncate">{meal.foodName}</p>
                 <Button
                   size="icon"
                   variant="ghost"
                   onClick={handleEdit}
-                  className="h-8 w-8"
+                  className="h-8 w-8 flex-shrink-0"
                 >
                   <Pencil className="h-4 w-4" />
                 </Button>
