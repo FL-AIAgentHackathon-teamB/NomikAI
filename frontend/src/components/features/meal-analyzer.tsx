@@ -535,8 +535,8 @@ const MealCard = ({ meal, onSelectConsumption, onReanalyze }: MealCardProps) => 
 
   return (
     <Card className="w-full mb-4 overflow-hidden">
-      <div className="relative w-full aspect-video">
-        <Image src={meal.imageUrl} alt={meal.foodName} fill className="object-cover" />
+      <div className="relative w-full aspect-video" onDragStart={(e) => e.preventDefault()} onContextMenu={(e) => e.preventDefault()}>
+        <Image src={meal.imageUrl} alt={meal.foodName} fill className="object-cover" draggable={false} />
       </div>
       
       {isReanalyzing ? (
@@ -788,8 +788,8 @@ const NewMealInput = ({ remainingCalories, remainingDishes, onAnalyze }: NewMeal
             }`}
           >
             {imagePreview ? (
-              <div className="relative w-full h-full">
-                <Image src={imagePreview} alt="新しいメニュー" fill className="object-cover rounded-md" />
+              <div className="relative w-full h-full" onDragStart={(e) => e.preventDefault()} onContextMenu={(e) => e.preventDefault()}>
+                <Image src={imagePreview} alt="新しいメニュー" fill className="object-cover rounded-md" draggable={false} />
                 {!isAnalyzing && (
                   <Button
                     type="button"
