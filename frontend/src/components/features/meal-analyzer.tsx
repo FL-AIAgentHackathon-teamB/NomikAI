@@ -562,10 +562,15 @@ const MealCard = ({ meal, onSelectConsumption, onReanalyze }: MealCardProps) => 
           <p className="text-muted-foreground ml-14">{meal.suggestedRefinement}</p>
         </div>
 
-        {meal.actualCalories !== undefined && (
+        {meal.actualCalories !== undefined && meal.consumptionLevel && (
           <div className="pt-4 border-t">
             <p className="text-base font-semibold text-green-600">
               実際の摂取: {meal.actualCalories} kcal
+              <span className="text-sm ml-2 text-muted-foreground">
+                ({meal.consumptionLevel === 'suggested' ? '提案通り' : 
+                  meal.consumptionLevel === 'more' ? 'もっと食べる' : 
+                  '少しだけ'})
+              </span>
             </p>
           </div>
         )}
