@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, ChangeEvent, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -302,41 +303,19 @@ const SessionHeader = ({ session, meals }: SessionHeaderProps) => {
     requestAnimationFrame(animate);
   }, [session.remainingCalories, session.targetCalories]);
 
-  // ドロワー開閉時にbodyのスクロールを制御
-  useEffect(() => {
-    if (isExpanded) {
-      // スクロールバーの幅を計算
-      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-      document.body.style.overflow = 'hidden';
-      document.body.style.paddingRight = `${scrollbarWidth}px`;
-    } else {
-      document.body.style.overflow = '';
-      document.body.style.paddingRight = '';
-    }
-
-    // クリーンアップ
-    return () => {
-      document.body.style.overflow = '';
-      document.body.style.paddingRight = '';
-    };
-  }, [isExpanded]);
-
   return (
     <>
-      {/* 背景オーバーレイ */}
-      {isExpanded && (
+      {/* 背景オーバーレイ（Portal化） */}
+      {isExpanded && typeof document !== 'undefined' && createPortal(
         <div
           className="fixed inset-0 bg-black/50 z-40"
           onClick={() => setIsExpanded(false)}
-        />
+        />,
+        document.body
       )}
 
       <div className="sticky top-4 z-[60] relative">
-        <Card className={`w-full ${
-          isExpanded
-            ? 'bg-card'
-            : 'bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80'
-        }`}>
+        <Card className="w-full bg-card">
         <CardContent
           className="py-3 px-4 cursor-pointer select-none"
           onClick={() => setIsExpanded(!isExpanded)}
