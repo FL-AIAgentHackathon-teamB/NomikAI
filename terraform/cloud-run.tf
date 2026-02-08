@@ -33,11 +33,6 @@ resource "google_cloud_run_service" "backend" {
         }
 
         env {
-          name  = "GCS_BUCKET"
-          value = google_storage_bucket.meal_images.name
-        }
-
-        env {
           name  = "NODE_ENV"
           value = "production"
         }

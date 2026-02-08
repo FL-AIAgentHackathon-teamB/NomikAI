@@ -24,12 +24,4 @@ output "frontend_service_account_email" {
   value       = google_service_account.frontend.email
 }
 
-# ============================================
-# Storage
-# ============================================
-output "gcs_bucket_name" {
-  description = "GCS bucket name for meal images"
-  value       = google_storage_bucket.meal_images.name
-}
-
 # Note: Artifact Registry outputs are defined in artifact-registry.tf

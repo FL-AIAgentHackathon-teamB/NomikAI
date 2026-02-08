@@ -6,8 +6,6 @@
 locals {
   required_apis = [
     "run.googleapis.com",              # Cloud Run
-    "firestore.googleapis.com",        # Firestore
-    "storage.googleapis.com",          # Cloud Storage
     "artifactregistry.googleapis.com", # Artifact Registry
     "secretmanager.googleapis.com",    # Secret Manager
     "iam.googleapis.com",              # IAM
