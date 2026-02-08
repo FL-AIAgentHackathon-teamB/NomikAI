@@ -65,6 +65,15 @@ router.post('/reanalyze', async (req: Request, res: Response) => {
       });
     }
 
+    // プロンプトインジェクション対策: 文字数制限とサニタイズ
+    const sanitizedFoodName = customFoodName.trim();
+    if (sanitizedFoodName.length === 0 || sanitizedFoodName.length > 15) {
+      return res.status(400).json({
+        success: false,
+        error: 'customFoodName must be between 1 and 15 characters'
+      });
+    }
+
     if (remainingCalories === undefined || typeof remainingCalories !== 'number') {
       return res.status(400).json({
         success: false,
@@ -75,7 +84,7 @@ router.post('/reanalyze', async (req: Request, res: Response) => {
     // AI再分析実行
     const result = await mealService.reanalyzeMeal({
       photoDataUri,
-      customFoodName,
+      customFoodName: sanitizedFoodName,
       remainingCalories,
       ...(remainingDishes !== undefined && { remainingDishes })
     });

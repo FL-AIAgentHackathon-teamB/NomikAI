@@ -489,6 +489,8 @@ const MealCard = ({ meal, onSelectConsumption, onReanalyze }: MealCardProps) => 
                   className="flex-1 text-lg font-bold"
                   disabled={isReanalyzing}
                   autoFocus
+                  maxLength={15}
+                  placeholder="メニュー名（15文字以内）"
                 />
                 <Button
                   size="icon"
