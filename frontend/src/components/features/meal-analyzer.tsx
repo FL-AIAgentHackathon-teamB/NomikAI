@@ -369,7 +369,14 @@ const SessionHeader = ({ session, meals }: SessionHeaderProps) => {
         </CardContent>
         
         {/* 食事履歴 */}
-        {isExpanded && meals.length > 0 && (
+        <div 
+          className={`overflow-hidden transition-all ease-in-out ${
+            isExpanded && meals.length > 0 ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'
+          }`}
+          style={{
+            transitionDuration: isExpanded ? `${meals.length * 150}ms` : '200ms'
+          }}
+        >
           <CardContent className="pt-0 pb-3 px-4 border-t">
             <div className="space-y-2 mt-3">
               {meals.map((meal, index) => (
@@ -392,7 +399,7 @@ const SessionHeader = ({ session, meals }: SessionHeaderProps) => {
               ))}
             </div>
           </CardContent>
-        )}
+        </div>
       </Card>
     </div>
   );
