@@ -388,7 +388,6 @@ const ConsumptionSelector = ({ onSelect, selected, estimate }: ConsumptionSelect
 
   return (
     <div className="space-y-2">
-      <p className="text-sm font-semibold">どれくらい食べましたか？</p>
       <div className="grid grid-cols-3 gap-2">
         {options.map(({ level, label, icon: Icon, calories }) => (
           <Button
@@ -530,28 +529,26 @@ const MealCard = ({ meal, onSelectConsumption, onReanalyze }: MealCardProps) => 
           </div>
         </div>
         
-        <div className="flex items-start gap-4">
+        <div className="flex items-center gap-4">
           <div className="bg-accent/10 p-2 rounded-full">
             <Flame className="h-6 w-6 text-accent" />
           </div>
           <div>
-            <h3 className="font-semibold">推定カロリー</h3>
-            <p className="text-muted-foreground">
-              約 <span className="font-bold text-foreground">{meal.calorieEstimate}</span> カロリー
+            <p className="text-lg text-muted-foreground">
+              約 <span className="font-bold text-foreground">{meal.calorieEstimate}</span> kcal
             </p>
           </div>
         </div>
         
-        <div className="flex items-start gap-4">
-          <div className="bg-primary/10 p-2 rounded-full">
-            <Sparkles className="h-6 w-6 text-primary" />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-semibold">提案</h3>
-            {meal.verdict && (
+        <div className="space-y-2">
+          {meal.verdict && (
+            <div className="flex items-center gap-4">
+              <div className="bg-primary/10 p-2 rounded-full">
+                <Sparkles className="h-6 w-6 text-primary" />
+              </div>
               <Badge
                 variant={meal.verdict === 'OK' ? 'default' : 'destructive'}
-                className="text-base font-semibold px-4 py-1 my-2"
+                className="text-base font-semibold px-4 py-1"
               >
                 {meal.verdict === 'OK' ? (
                   <CheckCircle2 className="h-5 w-5 mr-1" />
@@ -560,9 +557,9 @@ const MealCard = ({ meal, onSelectConsumption, onReanalyze }: MealCardProps) => 
                 )}
                 <span>{meal.verdict === 'OK' ? '食べてOK！' : 'ちょっと注意！'}</span>
               </Badge>
-            )}
-            <p className="text-muted-foreground">{meal.suggestedRefinement}</p>
-          </div>
+            </div>
+          )}
+          <p className="text-muted-foreground ml-14">{meal.suggestedRefinement}</p>
         </div>
 
         {meal.actualCalories !== undefined && (
