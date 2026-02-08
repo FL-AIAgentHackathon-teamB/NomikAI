@@ -779,27 +779,32 @@ const NewMealInput = ({ remainingCalories, remainingDishes, onAnalyze }: NewMeal
             onChange={handleImageChange}
             className="hidden"
             id="new-meal-photo"
+            disabled={isAnalyzing}
           />
           <Label
             htmlFor="new-meal-photo"
-            className="cursor-pointer flex items-center justify-center w-full border border-solid border-input bg-background rounded-md h-32 flex-col gap-2 text-muted-foreground"
+            className={`flex items-center justify-center w-full border border-solid border-input bg-background rounded-md h-32 flex-col gap-2 text-muted-foreground ${
+              !isAnalyzing && 'cursor-pointer'
+            }`}
           >
             {imagePreview ? (
               <div className="relative w-full h-full">
                 <Image src={imagePreview} alt="新しいメニュー" fill className="object-cover rounded-md" />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute top-2 right-2 h-6 w-6 rounded-full z-10 bg-black/50 text-white hover:bg-black/70"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    removeImage();
-                  }}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                {!isAnalyzing && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 h-6 w-6 rounded-full z-10 bg-black/50 text-white hover:bg-black/70"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      removeImage();
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             ) : (
               <>
