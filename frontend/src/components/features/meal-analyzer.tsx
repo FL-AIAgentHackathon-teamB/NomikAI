@@ -40,7 +40,9 @@ import {
   ArrowDown,
   PartyPopper,
   Pencil,
-  Check
+  Check,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -234,11 +236,13 @@ const SessionInitForm = ({ onStart }: SessionInitFormProps) => {
 
 interface SessionHeaderProps {
   session: Session;
+  meals: Meal[];
 }
 
-const SessionHeader = ({ session }: SessionHeaderProps) => {
+const SessionHeader = ({ session, meals }: SessionHeaderProps) => {
   const [displayedCalories, setDisplayedCalories] = useState(session.remainingCalories);
   const [displayedProgress, setDisplayedProgress] = useState((session.remainingCalories / session.targetCalories) * 100);
+  const [isExpanded, setIsExpanded] = useState(false);
   const progress = (session.remainingCalories / session.targetCalories) * 100;
   const isOverCalories = session.remainingCalories < 0;
   const overAmount = Math.abs(session.remainingCalories);
@@ -301,7 +305,10 @@ const SessionHeader = ({ session }: SessionHeaderProps) => {
   return (
     <div className="sticky top-4 z-40 mb-6">
       <Card className="w-full bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-        <CardContent className="py-3 px-4">
+        <CardContent 
+          className="py-3 px-4 cursor-pointer select-none"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
           <div className="flex items-center justify-between gap-4">
             {/* 残りカロリー表示（コンパクト） */}
             <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -336,21 +343,56 @@ const SessionHeader = ({ session }: SessionHeaderProps) => {
               </div>
             </div>
             
-            {/* 残りの品数（あれば） */}
-            {session.remainingDishes !== undefined && (
-              <Badge variant="secondary" className="flex-shrink-0">
-                <UtensilsCrossed className="h-3 w-3 mr-1" />
-                {session.remainingDishes > 0 ? (
-                  <>残り {session.remainingDishes} 品</>
-                ) : session.remainingDishes === 0 ? (
-                  <>残り 0 品</>
-                ) : (
-                  <>おかわり +{Math.abs(session.remainingDishes)} 品</>
-                )}
-              </Badge>
-            )}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {/* 残りの品数（あれば） */}
+              {session.remainingDishes !== undefined && (
+                <Badge variant="secondary">
+                  <UtensilsCrossed className="h-3 w-3 mr-1" />
+                  {session.remainingDishes > 0 ? (
+                    <>残り {session.remainingDishes} 品</>
+                  ) : session.remainingDishes === 0 ? (
+                    <>残り 0 品</>
+                  ) : (
+                    <>おかわり +{Math.abs(session.remainingDishes)} 品</>
+                  )}
+                </Badge>
+              )}
+              
+              {/* 開閉アイコン */}
+              {isExpanded ? (
+                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              )}
+            </div>
           </div>
         </CardContent>
+        
+        {/* 食事履歴 */}
+        {isExpanded && meals.length > 0 && (
+          <CardContent className="pt-0 pb-3 px-4 border-t">
+            <div className="space-y-2 mt-3">
+              {meals.map((meal, index) => (
+                <div 
+                  key={meal.id} 
+                  className="flex items-center justify-between py-2 px-3 rounded-md bg-secondary/50"
+                >
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span className="text-xs font-semibold text-muted-foreground flex-shrink-0">
+                      {index + 1}品目
+                    </span>
+                    <span className="text-sm font-semibold truncate">
+                      {meal.foodName}
+                    </span>
+                  </div>
+                  <span className="text-sm font-semibold text-primary flex-shrink-0 ml-2">
+                    {meal.actualCalories} kcal
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        )}
       </Card>
     </div>
   );
@@ -782,7 +824,7 @@ const SessionView = ({
 }: SessionViewProps) => {
   return (
     <div className="w-full max-w-md mx-auto space-y-6">
-      <SessionHeader session={session} />
+      <SessionHeader session={session} meals={meals} />
       
       <div className="space-y-4">
         {meals.map((meal) => (
