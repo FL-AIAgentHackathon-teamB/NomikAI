@@ -36,6 +36,11 @@ npm install
 
 2. 環境変数の設定:
 
+ルート `.env`:
+```bash
+GEMINI_API_KEY=your_gemini_api_key_here
+```
+
 バックエンド用 `backend/.env`:
 ```bash
 GEMINI_API_KEY=your_gemini_api_key_here
@@ -46,6 +51,7 @@ FRONTEND_URL=http://localhost:9002
 
 フロントエンド用 `frontend/.env.local`:
 ```bash
+GEMINI_API_KEY=your_gemini_api_key_here
 BACKEND_URL=http://localhost:3001
 ```
 
@@ -78,6 +84,9 @@ npm run dev
 │   │   │   └── ui/       # shadcn/ui コンポーネント
 │   │   ├── hooks/        # カスタムフック
 │   │   ├── lib/          # ユーティリティ
+│   │   │   ├── utils.ts
+│   │   │   ├── placeholder-images.ts
+│   │   │   └── placeholder-images.json
 │   │   └── ai/           # Genkit AI フロー（フロントエンド側）
 │   ├── Dockerfile        # フロントエンド用Docker設定
 │   └── package.json
@@ -93,8 +102,13 @@ npm run dev
 │   ├── main.tf
 │   ├── cloud-run.tf
 │   ├── apis.tf
-│   ├── firestore.tf
-│   └── その他の設定ファイル
+│   ├── artifact-registry.tf
+│   ├── gcs.tf
+│   ├── iam.tf
+│   ├── outputs.tf
+│   ├── secret-manager.tf
+│   ├── variables.tf
+│   └── workload-identity-deploy.tf
 ├── docs/                  # ドキュメント
 │   ├── ARCHITECTURE.md   # アーキテクチャ詳細
 │   ├── DEPLOYMENT.md     # デプロイメントガイド
@@ -115,15 +129,21 @@ npm run dev
 
 ### フロントエンド
 - **Framework**: Next.js 16.x (App Router)
+- **React**: React 19.x
 - **UI**: Tailwind CSS + Radix UI + shadcn/ui
+- **UI Libraries**: Recharts, Embla Carousel, Lucide React
+- **Form Management**: React Hook Form + Zod
 - **Language**: TypeScript
+- **Utilities**: date-fns
 - **State Management**: React Server Components
 - **Deployment**: Cloud Run / Firebase App Hosting
 
 ### バックエンド
 - **Runtime**: Node.js 20
 - **Framework**: Express 4.x
+- **Middleware**: CORS, Multer (ファイルアップロード)
 - **AI**: Google Genkit 1.20 + Gemini 2.0 Flash
+- **Validation**: Zod
 - **Language**: TypeScript
 - **Deployment**: Cloud Run
 
@@ -171,9 +191,15 @@ terraform apply
 ```json
 {
   "photoDataUri": "data:image/jpeg;base64,...",
-  "remainingCalories": 1500
+  "remainingCalories": 1500,
+  "remainingDishes": 3  // オプショナル
 }
 ```
+
+**バリデーション:**
+- photoDataUri: data URI形式の文字列（必須）
+- remainingCalories: 数値（必須）
+- remainingDishes: 数値（オプショナル）
 
 **レスポンス:**
 ```json
@@ -188,8 +214,80 @@ terraform apply
 }
 ```
 
+**エラーレスポンス:**
+```json
+{
+  "success": false,
+  "error": "エラーメッセージ"
+}
+```
+
+**ステータスコード:**
+- 200: 成功
+- 400: バリデーションエラー
+- 500: サーバーエラー
+
+### POST /api/v1/meals/reanalyze
+カスタム食品名を使用して食事画像を再分析
+
+**リクエスト:**
+```json
+{
+  "photoDataUri": "data:image/jpeg;base64,...",
+  "customFoodName": "カスタマイズした食品名",
+  "remainingCalories": 1500,
+  "remainingDishes": 3
+}
+```
+
+**バリデーション:**
+- customFoodName: 1-15文字の文字列（必須、trim処理）
+- photoDataUri: data URI形式の文字列（必須）
+- remainingCalories: 数値（必須）
+- remainingDishes: 数値（オプショナル）
+
+**レスポンス:**
+```json
+{
+  "success": true,
+  "data": {
+    "foodName": "カスタマイズした食品名",
+    "calorieEstimate": 850,
+    "verdict": "CAUTION",
+    "suggestedRefinement": "..."
+  }
+}
+```
+
+**エラーレスポンス:**
+```json
+{
+  "success": false,
+  "error": "エラーメッセージ"
+}
+```
+
+**ステータスコード:**
+- 200: 成功
+- 400: バリデーションエラー
+- 500: サーバーエラー
+
+**セキュリティ:**
+- プロンプトインジェクション対策として1-15文字制限を実施
+
 ### GET /api/v1/meals/health
 ヘルスチェック
+
+**レスポンス:**
+```json
+{
+  "status": "ok",
+  "service": "meal-analyzer"
+}
+```
+
+**ステータスコード:**
+- 200: 常に成功
 
 ## 📊 その他のコマンド
 
@@ -202,6 +300,7 @@ npm run start       # プロダクションサーバー起動
 npm run lint        # リント実行
 npm run typecheck   # TypeScript型チェック
 npm run genkit:dev  # Genkit開発UI起動
+npm run genkit:watch # Genkit開発UI（watchモード）
 ```
 
 ### バックエンド
