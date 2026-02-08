@@ -303,7 +303,7 @@ const SessionHeader = ({ session, meals }: SessionHeaderProps) => {
   }, [session.remainingCalories, session.targetCalories]);
 
   return (
-    <div className="sticky top-4 z-40 mb-6">
+    <div className="sticky top-4 z-40 mb-4">
       <Card className="w-full bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
         <CardContent 
           className="py-3 px-4 cursor-pointer select-none"
@@ -315,17 +315,17 @@ const SessionHeader = ({ session, meals }: SessionHeaderProps) => {
               <Flame className={`h-4 w-4 flex-shrink-0 ${colorClasses.icon}`} />
               <div className="min-w-0 flex-1">
                 {isOverCalories ? (
-                  <div className="flex items-baseline gap-1">
+                  <div className="flex items-baseline gap-1 whitespace-nowrap">
                     <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0 translate-y-0.5 translate-x-0.5" />
-                    <span className="text-base font-bold text-red-500">
+                    <span className="text-sm font-bold text-red-500">
                       {Math.abs(displayedCalories)} kcal
                     </span>
-                    <span className="text-xs font-bold text-red-500/70">
-                      オーバー！
+                    <span className="text-[10px] font-extrabold text-red-500/70">
+                      Over
                     </span>
                   </div>
                 ) : (
-                  <div className="flex items-baseline gap-1">
+                  <div className="flex items-baseline gap-1 whitespace-nowrap">
                     <span className={`text-base font-bold ${colorClasses.text}`}>
                       残り {displayedCalories}
                     </span>
@@ -830,7 +830,7 @@ const SessionView = ({
   onEndSession 
 }: SessionViewProps) => {
   return (
-    <div className="w-full max-w-md mx-auto space-y-6">
+    <div className="w-full max-w-md mx-auto space-y-4">
       <SessionHeader session={session} meals={meals} />
       
       <div className="space-y-4">
