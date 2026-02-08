@@ -320,7 +320,7 @@ const SessionHeader = ({ session, meals }: SessionHeaderProps) => {
                     <span className="text-sm font-bold text-red-500">
                       {Math.abs(displayedCalories)} kcal
                     </span>
-                    <span className="text-[10px] font-extrabold text-red-500/70">
+                    <span className="text-[10px] font-extrabold text-red-500">
                       Over
                     </span>
                   </div>
