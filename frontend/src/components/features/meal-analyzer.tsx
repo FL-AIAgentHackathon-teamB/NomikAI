@@ -285,27 +285,59 @@ const SessionHeader = ({ session, meals }: SessionHeaderProps) => {
       const now = Date.now();
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      
+
       // イージング関数（ease-out）
       const eased = 1 - Math.pow(1 - progress, 3);
       const currentCalories = startValue + (endValue - startValue) * eased;
       const currentProgress = startProgress + (endProgress - startProgress) * eased;
-      
+
       setDisplayedCalories(Math.round(currentCalories));
       setDisplayedProgress(currentProgress);
-      
+
       if (progress < 1) {
         requestAnimationFrame(animate);
       }
     };
-    
+
     requestAnimationFrame(animate);
   }, [session.remainingCalories, session.targetCalories]);
 
+  // ドロワー開閉時にbodyのスクロールを制御
+  useEffect(() => {
+    if (isExpanded) {
+      // スクロールバーの幅を計算
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      document.body.style.overflow = 'hidden';
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+    }
+
+    // クリーンアップ
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+    };
+  }, [isExpanded]);
+
   return (
-    <div className="sticky top-4 z-40 mb-4">
-      <Card className="w-full bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-        <CardContent 
+    <>
+      {/* 背景オーバーレイ */}
+      {isExpanded && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40"
+          onClick={() => setIsExpanded(false)}
+        />
+      )}
+
+      <div className="sticky top-4 z-[60] relative">
+        <Card className={`w-full ${
+          isExpanded
+            ? 'bg-card'
+            : 'bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80'
+        }`}>
+        <CardContent
           className="py-3 px-4 cursor-pointer select-none"
           onClick={() => setIsExpanded(!isExpanded)}
         >
@@ -335,14 +367,14 @@ const SessionHeader = ({ session, meals }: SessionHeaderProps) => {
                   </div>
                 )}
                 <div className="relative h-1.5 mt-1 bg-secondary rounded-full overflow-hidden">
-                  <div 
+                  <div
                     className={`absolute inset-y-0 left-0 ${colorClasses.progress} rounded-full`}
                     style={{ width: `${Math.min(displayedProgress, 100)}%` }}
                   />
                 </div>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-2 flex-shrink-0">
               {/* 残りの品数（あれば） */}
               {session.remainingDishes !== undefined && (
@@ -357,7 +389,7 @@ const SessionHeader = ({ session, meals }: SessionHeaderProps) => {
                   )}
                 </Badge>
               )}
-              
+
               {/* 開閉アイコン */}
               {isExpanded ? (
                 <ChevronUp className="h-4 w-4 text-muted-foreground" />
@@ -367,21 +399,26 @@ const SessionHeader = ({ session, meals }: SessionHeaderProps) => {
             </div>
           </div>
         </CardContent>
-        
-        {/* 食事履歴 */}
-        <div 
-          className={`overflow-hidden transition-all ease-in-out ${
-            isExpanded && meals.length > 0 ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'
-          }`}
-          style={{
-            transitionDuration: isExpanded ? `${meals.length * 150}ms` : '200ms'
-          }}
-        >
-          <CardContent className="pt-0 pb-3 px-4 border-t">
-            <div className="space-y-2 mt-3">
+      </Card>
+
+      {/* 履歴ドロワー（absolute配置） */}
+      <div
+        className={`absolute top-full left-0 right-0 mt-2 bg-card rounded-lg shadow-lg overflow-hidden transition-all ease-in-out z-[60] ${
+          isExpanded && meals.length > 0 ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'
+        }`}
+        style={{
+          transitionDuration: isExpanded ? `${meals.length * 150}ms` : '200ms'
+        }}
+      >
+        <div className="px-4 py-3 border-b bg-card">
+          <h3 className="text-sm font-semibold">食事履歴</h3>
+        </div>
+        <div className="px-4 py-3 max-h-[520px] overflow-y-auto">
+          {meals.length > 0 ? (
+            <div className="space-y-2">
               {meals.map((meal, index) => (
-                <div 
-                  key={meal.id} 
+                <div
+                  key={meal.id}
                   className="flex items-center justify-between py-2 px-3 rounded-md bg-secondary/50"
                 >
                   <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -398,10 +435,15 @@ const SessionHeader = ({ session, meals }: SessionHeaderProps) => {
                 </div>
               ))}
             </div>
-          </CardContent>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              まだ食事の記録がありません
+            </p>
+          )}
         </div>
-      </Card>
+      </div>
     </div>
+    </>
   );
 };
 
