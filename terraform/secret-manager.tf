@@ -1,25 +1,28 @@
 # =============================================================================
-# Secret Manager
+# Secret Manager - DEPRECATED
 # =============================================================================
+# DEPRECATED: No longer needed with Vertex AI ADC authentication
+# Remove after 1 week of stable operation (2026-02-16)
+#
 # Secure storage for sensitive configuration like API keys
 # Note: This only creates the "secret" container. Actual values must be
 # added manually via GCP Console or gcloud command.
 
-resource "google_secret_manager_secret" "gemini_api_key" {
-  secret_id = "gemini-api-key"
-  project   = var.project_id
-
-  replication {
-    auto {}
-  }
-
-  labels = {
-    purpose     = "api-key"
-    service     = "gemini"
-    managed_by  = "terraform"
-    environment = "production"
-  }
-}
+# resource "google_secret_manager_secret" "gemini_api_key" {
+#   secret_id = "gemini-api-key"
+#   project   = var.project_id
+#
+#   replication {
+#     auto {}
+#   }
+#
+#   labels = {
+#     purpose     = "api-key"
+#     service     = "gemini"
+#     managed_by  = "terraform"
+#     environment = "production"
+#   }
+# }
 
 # Instructions for adding the secret value manually:
 # ------------------------------------------------

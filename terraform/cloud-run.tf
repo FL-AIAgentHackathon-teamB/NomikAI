@@ -37,15 +37,15 @@ resource "google_cloud_run_service" "backend" {
           value = "production"
         }
 
-        # Secret Managerからシークレット取得
+        # Vertex AI用の環境変数（ADC認証を使用）
         env {
-          name = "GEMINI_API_KEY"
-          value_from {
-            secret_key_ref {
-              name = google_secret_manager_secret.gemini_api_key.secret_id
-              key  = "latest"
-            }
-          }
+          name  = "GCP_PROJECT_ID"
+          value = var.project_id
+        }
+
+        env {
+          name  = "VERTEX_AI_REGION"
+          value = var.region
         }
       }
     }
