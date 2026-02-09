@@ -13,16 +13,6 @@ resource "google_service_account" "backend" {
   project      = var.project_id
 }
 
-
-
-# Secret Manager access - DEPRECATED: No longer needed with Vertex AI ADC
-# Remove after 1 week of stable operation (2026-02-16)
-# resource "google_secret_manager_secret_iam_member" "backend_secret_access" {
-#   secret_id = google_secret_manager_secret.gemini_api_key.id
-#   role      = "roles/secretmanager.secretAccessor"
-#   member    = "serviceAccount:${google_service_account.backend.email}"
-# }
-
 # Vertex AI access (for Gemini API)
 resource "google_project_iam_member" "backend_aiplatform" {
   project = var.project_id
