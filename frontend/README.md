@@ -16,11 +16,10 @@ npm run dev
 `.env.local` ファイルを作成し、以下の環境変数を設定:
 
 ```bash
-GEMINI_API_KEY=your_gemini_api_key_here
 BACKEND_URL=http://localhost:3001
 ```
 
-（GEMINI_API_KEYはフロントエンド側でも使用されます。AI機能の主な処理はバックエンド側で行われます）
+**注記**: 開発環境では`NODE_ENV=development`が自動設定され、IAM認証がスキップされます。本番環境（Cloud Run）では自動的にIAM認証が有効化されます。
 
 ## ビルド
 
@@ -43,16 +42,18 @@ npm run genkit:watch # Genkit開発UI（watchモード、自動リロード）
 - **Framework**: Next.js 16.x (App Router)
 - **React**: React 19.x
 - **UI**: Tailwind CSS + Radix UI + shadcn/ui
-- **UI Libraries**: Recharts, Embla Carousel
+- **UI Libraries**: Recharts, Embla Carousel, Lucide React
+- **UI Utilities**: class-variance-authority, clsx, tailwind-merge, tailwindcss-animate
 - **Form Management**: React Hook Form + Zod
 - **Language**: TypeScript 5.x
-- **Utilities**: date-fns, lucide-react
-- **AI Integration**: Genkit 1.20 + Google Gemini
+- **AI Integration**: Google Genkit 1.20 + Gemini 2.5 Flash
+- **Authentication**: google-auth-library（Cloud Run IAM認証）
+- **Utilities**: date-fns, react-day-picker
 - **Build Tool**: Turbopack
-- **Deployment**: Cloud Run / Firebase App Hosting
+- **Deployment**: Cloud Run
 
 **依存関係の詳細:**
-- Radix UI: 多数のコンポーネント（Dialog, Dropdown, Popover等）
+- Radix UI: 16個のコンポーネント（Dialog, Dropdown, Popover等）
 - fast-xml-parser: ^5.3.4（overrides設定）
 
 ## ディレクトリ構造

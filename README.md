@@ -12,7 +12,6 @@ frontend/           backend/            Google AI
 Port: 9002          Port: 3001
 ```
 
-詳細は [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) を参照してください。
 
 ## 🚀 セットアップ
 
@@ -36,14 +35,13 @@ npm install
 
 2. 環境変数の設定:
 
-ルート `.env`:
-```bash
-GEMINI_API_KEY=your_gemini_api_key_here
-```
-
 バックエンド用 `backend/.env`:
 ```bash
-GEMINI_API_KEY=your_gemini_api_key_here
+# Google Cloud 設定（本番環境では必須）
+GCP_PROJECT_ID=your-gcp-project-id
+VERTEX_AI_REGION=asia-northeast1
+
+# API サーバー設定
 PORT=3001
 NODE_ENV=development
 FRONTEND_URL=http://localhost:9002
@@ -51,9 +49,10 @@ FRONTEND_URL=http://localhost:9002
 
 フロントエンド用 `frontend/.env.local`:
 ```bash
-GEMINI_API_KEY=your_gemini_api_key_here
 BACKEND_URL=http://localhost:3001
 ```
+
+**認証について**: 本番環境ではGoogle Cloud Application Default Credentials (ADC)を使用します。開発環境ではローカル認証を自動スキップします。
 
 3. 開発サーバーの起動:
 
@@ -106,14 +105,8 @@ npm run dev
 │   ├── gcs.tf
 │   ├── iam.tf
 │   ├── outputs.tf
-│   ├── secret-manager.tf
 │   ├── variables.tf
 │   └── workload-identity-deploy.tf
-├── docs/                  # ドキュメント
-│   ├── ARCHITECTURE.md   # アーキテクチャ詳細
-│   ├── DEPLOYMENT.md     # デプロイメントガイド
-│   ├── PROJECT_OVERVIEW.md
-│   └── その他
 ├── apphosting.yaml        # Firebase App Hosting設定
 └── README.md              # このファイル
 ```
@@ -121,7 +114,7 @@ npm run dev
 ## 🎨 主な機能
 
 - 📸 食事画像のアップロードと分析
-- 🤖 Gemini 2.0 Flash による食品識別とカロリー推定
+- 🤖 Gemini 2.5 Flash による食品識別とカロリー推定
 - 💡 残りカロリーに基づいたパーソナライズされたアドバイス
 - 📊 シンプルで直感的なUI（shadcn/ui使用）
 
@@ -132,31 +125,32 @@ npm run dev
 - **React**: React 19.x
 - **UI**: Tailwind CSS + Radix UI + shadcn/ui
 - **UI Libraries**: Recharts, Embla Carousel, Lucide React
+- **UI Utilities**: class-variance-authority, clsx, tailwind-merge, tailwindcss-animate
 - **Form Management**: React Hook Form + Zod
 - **Language**: TypeScript
-- **Utilities**: date-fns
+- **AI Integration**: Google Genkit 1.20 + Gemini 2.5 Flash
+- **Authentication**: google-auth-library（Cloud Run IAM認証）
+- **Utilities**: date-fns, react-day-picker
 - **State Management**: React Server Components
-- **Deployment**: Cloud Run / Firebase App Hosting
+- **Deployment**: Cloud Run
 
 ### バックエンド
 - **Runtime**: Node.js 20
 - **Framework**: Express 4.x
-- **Middleware**: CORS, Multer (ファイルアップロード)
-- **AI**: Google Genkit 1.20 + Gemini 2.0 Flash
+- **Middleware**: CORS, Multer（将来の画像アップロード機能用）
+- **AI**: Google Genkit 1.20 + Vertex AI Gemini 2.5 Flash
 - **Validation**: Zod
 - **Language**: TypeScript
+- **Development Tool**: tsx（ホットリロード）
 - **Deployment**: Cloud Run
 
 ### インフラ
 - **IaC**: Terraform
 - **Container Registry**: Google Artifact Registry
-- **Database**: Firestore (計画中)
-- **Storage**: Google Cloud Storage (計画中)
-- **Secrets**: Google Secret Manager
+- **Authentication**: Workload Identity + Application Default Credentials (ADC)
+- **Storage**: Google Cloud Storage（計画中）
 
 ## 🚢 デプロイ
-
-詳細なデプロイ手順は [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) を参照してください。
 
 ### クイックデプロイ
 

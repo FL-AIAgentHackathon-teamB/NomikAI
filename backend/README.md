@@ -16,11 +16,17 @@ APIサーバーは http://localhost:3001 で起動します。
 `.env` ファイルを作成し、以下の環境変数を設定:
 
 ```bash
-GEMINI_API_KEY=your_gemini_api_key_here
+# Google Cloud 設定（本番環境では必須）
+GCP_PROJECT_ID=your-gcp-project-id
+VERTEX_AI_REGION=asia-northeast1
+
+# API サーバー設定
 PORT=3001
 NODE_ENV=development
 FRONTEND_URL=http://localhost:9002
 ```
+
+**認証について**: 本番環境ではGoogle Cloud Application Default Credentials (ADC)とVertex AIを使用します。開発環境ではローカル認証で動作します。
 
 ## ビルド
 
@@ -33,8 +39,8 @@ npm run start
 
 - **Runtime**: Node.js 20
 - **Framework**: Express 4.x
-- **Middleware**: CORS (^2.8.5), Multer (^2.0.2)
-- **AI**: Google Genkit 1.20 + Gemini 2.0 Flash
+- **Middleware**: CORS (^2.8.5), Multer (^2.0.2)（将来の画像アップロード機能用）
+- **AI**: Google Genkit 1.20 + Vertex AI Gemini 2.5 Flash
 - **Validation**: Zod (^3.24.2)
 - **Language**: TypeScript 5.x
 - **Build Tool**: tsx (開発時), tsc (ビルド時)
@@ -42,6 +48,7 @@ npm run start
 
 **依存関係の詳細:**
 - fast-xml-parser: ^5.3.4（overrides設定）
+- @genkit-ai/vertexai: Vertex AI統合プラグイン
 
 ## API エンドポイント
 
@@ -165,5 +172,3 @@ src/
 │   └── meal.service.ts
 └── index.ts       # エントリーポイント
 ```
-# Trigger redeploy
-
