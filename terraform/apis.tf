@@ -7,7 +7,6 @@ locals {
   required_apis = [
     "run.googleapis.com",              # Cloud Run
     "artifactregistry.googleapis.com", # Artifact Registry
-    "secretmanager.googleapis.com",    # Secret Manager
     "iam.googleapis.com",              # IAM
     "aiplatform.googleapis.com",       # Vertex AI (Gemini)
   ]
