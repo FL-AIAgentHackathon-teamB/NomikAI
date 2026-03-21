@@ -30,20 +30,20 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Authenticate to Google Cloud
         id: auth
-        uses: google-github-actions/auth@v3
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
           workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER_TERRAFORM }}
 
       - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
+        uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f # v2.2.1
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
         with:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: true
@@ -82,41 +82,50 @@ jobs:
           echo 'EOF' >> $GITHUB_OUTPUT
 
       - name: Comment on PR
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         if: github.event_name == 'pull_request'
+        env:
+          PLAN_OUTPUT: ${{ steps.plan-output.outputs.PLAN }}
+          FMT_OUTCOME: ${{ steps.fmt.outcome }}
+          INIT_OUTCOME: ${{ steps.init.outcome }}
+          VALIDATE_OUTCOME: ${{ steps.validate.outcome }}
+          PLAN_OUTCOME: ${{ steps.plan.outcome }}
+          ACTOR: ${{ github.actor }}
+          EVENT_NAME: ${{ github.event_name }}
+          WORKFLOW: ${{ github.workflow }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const output = `### Terraform Plan Results 🏗️
-            
-            #### Format Check 🖌️ \`${{ steps.fmt.outcome }}\`
-            #### Initialization ⚙️ \`${{ steps.init.outcome }}\`
-            #### Validation 🤖 \`${{ steps.validate.outcome }}\`
-            #### Plan 📖 \`${{ steps.plan.outcome }}\`
-            
+
+            #### Format Check 🖌️ \`${process.env.FMT_OUTCOME}\`
+            #### Initialization ⚙️ \`${process.env.INIT_OUTCOME}\`
+            #### Validation 🤖 \`${process.env.VALIDATE_OUTCOME}\`
+            #### Plan 📖 \`${process.env.PLAN_OUTCOME}\`
+
             <details><summary>Show Plan</summary>
-            
+
             \`\`\`hcl
-            ${{ steps.plan-output.outputs.PLAN }}
+            ${process.env.PLAN_OUTPUT}
             \`\`\`
-            
+
             </details>
-            
-            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*
-            *Workflow: \`${{ github.workflow }}\`*`;
-            
+
+            *Pushed by: @${process.env.ACTOR}, Action: \`${process.env.EVENT_NAME}\`*
+            *Workflow: \`${process.env.WORKFLOW}\`*`;
+
             // Find existing comment
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
-            
-            const botComment = comments.find(comment => 
-              comment.user.type === 'Bot' && 
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
               comment.body.includes('### Terraform Plan Results')
             );
-            
+
             if (botComment) {
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
